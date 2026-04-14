@@ -1,0 +1,30 @@
+# Dependencies (if any tooling ends up here)
+node_modules/
+.pnp
+.pnp.js
+
+# Build output (none yet — Phase 2 will decide whether dist/ is committed
+# or regenerated; ido4shape commits dist/spec-validator.js so we likely
+# will too, but leaving this here until Phase 2 makes the call)
+coverage/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
