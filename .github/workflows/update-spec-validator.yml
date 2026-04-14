@@ -1,0 +1,129 @@
+name: Update spec-format bundle
+
+# Pulls a new @ido4/spec-format bundle into dist/ and opens a PR.
+# Triggered by:
+#   - repository_dispatch from @ido4/spec-format's publish workflow (Phase 4 wiring —
+#     ido4 monorepo's publish.yml needs to dispatch to BOTH ido4shape AND ido4specs
+#     for the spec-format-published event)
+#   - weekly cron as a safety net
+#   - manual workflow_dispatch with an optional version input
+#
+# This is the strategic-spec validator that ido4specs uses in /ido4specs:create-spec
+# Stage 0 to parse the upstream strategic spec from ido4shape — the architectural
+# replacement for the old parse_strategic_spec MCP call. Symmetric with
+# update-tech-spec-validator.yml; both workflows are auto-triggered, neither
+# is manual-only.
+#
+# Patch/minor updates auto-merge. Major version bumps require review because
+# they may require create-spec Stage 0 parsing-output handling updates.
+
+on:
+  repository_dispatch:
+    types: [spec-format-published]
+  schedule:
+    - cron: '0 9 * * 1'  # Weekly Monday 9am UTC
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'spec-format version (leave empty for latest)'
+        required: false
+
+jobs:
+  update-bundle:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Determine target version
+        id: version
+        run: |
+          if [ -n "${{ github.event.client_payload.version }}" ]; then
+            echo "target=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+            echo "Source: repository_dispatch"
+          elif [ -n "${{ inputs.version }}" ]; then
+            echo "target=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "Source: workflow_dispatch"
+          else
+            LATEST=$(npm view @ido4/spec-format version 2>/dev/null || echo "")
+            if [ -z "$LATEST" ]; then
+              echo "ERROR: Could not fetch latest version from npm"
+              exit 1
+            fi
+            echo "target=$LATEST" >> $GITHUB_OUTPUT
+            echo "Source: npm latest ($LATEST)"
+          fi
+
+      - name: Check if update needed
+        id: check
+        run: |
+          CURRENT=$(cat dist/.spec-format-version 2>/dev/null || echo "none")
+          TARGET="${{ steps.version.outputs.target }}"
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "target=$TARGET" >> $GITHUB_OUTPUT
+          if [ "$CURRENT" = "$TARGET" ]; then
+            echo "needed=false" >> $GITHUB_OUTPUT
+            echo "Already at v$TARGET — no update needed"
+          else
+            echo "needed=true" >> $GITHUB_OUTPUT
+            echo "Update needed: v$CURRENT → v$TARGET"
+          fi
+
+      - name: Update bundle
+        if: steps.check.outputs.needed == 'true'
+        run: bash scripts/update-spec-validator.sh "${{ steps.version.outputs.target }}"
+
+      - name: Determine merge strategy
+        if: steps.check.outputs.needed == 'true'
+        id: merge
+        run: |
+          CURRENT="${{ steps.check.outputs.current }}"
+          TARGET="${{ steps.check.outputs.target }}"
+          CURRENT_MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          TARGET_MAJOR=$(echo "$TARGET" | cut -d. -f1)
+          if [ "$CURRENT_MAJOR" != "$TARGET_MAJOR" ] && [ "$CURRENT" != "none" ]; then
+            echo "auto=false" >> $GITHUB_OUTPUT
+            echo "label=needs-review" >> $GITHUB_OUTPUT
+            echo "Major version change ($CURRENT_MAJOR → $TARGET_MAJOR) — requires review"
+          else
+            echo "auto=true" >> $GITHUB_OUTPUT
+            echo "label=auto-merge" >> $GITHUB_OUTPUT
+            echo "Patch/minor update — auto-merge enabled"
+          fi
+
+      - name: Create Pull Request
+        if: steps.check.outputs.needed == 'true'
+        id: pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.PAT }}
+          commit-message: "chore: update spec-validator bundle to v${{ steps.version.outputs.target }}"
+          title: "Update spec-validator to v${{ steps.version.outputs.target }}"
+          body: |
+            Automated bundle update from @ido4/spec-format.
+
+            **Previous version:** ${{ steps.check.outputs.current }}
+            **New version:** ${{ steps.version.outputs.target }}
+
+            Bundle has been smoke-tested against tests/fixtures/example-strategic-spec.md.
+
+            This is the strategic-spec validator used by /ido4specs:create-spec Stage 0
+            to parse upstream strategic specs from ido4shape — symmetric with the
+            tech-spec validator update flow.
+
+            ${{ steps.merge.outputs.auto == 'true' && 'This is a patch/minor update — auto-merge enabled.' || '⚠️ **Major version change** — review create-spec Stage 0 parsing-output handling for compatibility before merging.' }}
+          branch: automated/update-spec-validator
+          labels: ${{ steps.merge.outputs.label }}
+          delete-branch: true
+
+      - name: Enable auto-merge
+        if: steps.check.outputs.needed == 'true' && steps.merge.outputs.auto == 'true' && steps.pr.outputs.pull-request-number
+        run: gh pr merge ${{ steps.pr.outputs.pull-request-number }} --auto --squash
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
