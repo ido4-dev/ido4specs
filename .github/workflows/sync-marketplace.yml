@@ -1,0 +1,114 @@
+name: Sync Marketplace
+
+# Gated on CI passing — never publishes a commit that failed validation.
+# Sync is idempotent (skips if marketplace already matches), so it's safe
+# to fire on every successful CI run, not just plugin.json changes.
+#
+# ─── Phase 5 activation ────────────────────────────────────
+# This workflow is intentionally commented out until Phase 5 of the ido4specs
+# extraction lands. Reason: the `ido4-dev/ido4-plugins` marketplace entry for
+# ido4specs and the MARKETPLACE_TOKEN secret do not exist during Phase 2–4.
+# Running this job unconditionally during that window would produce failing
+# CI runs that are noise, not signal.
+#
+# To activate after Phase 5:
+#   1. Confirm ido4specs is listed in ido4-plugins/.claude-plugin/marketplace.json
+#   2. Confirm MARKETPLACE_TOKEN secret exists with write access to ido4-plugins
+#   3. Remove the `if: false &&` guard below
+# ───────────────────────────────────────────────────────────
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: ${{ false && github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout ido4specs (the SHA CI validated)
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          path: source
+
+      - name: Read version from plugin.json
+        id: version
+        run: |
+          VERSION=$(python3 -c "import json; print(json.load(open('source/.claude-plugin/plugin.json'))['version'])")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Plugin version: $VERSION"
+
+      - name: Checkout ido4-plugins marketplace
+        uses: actions/checkout@v5
+        with:
+          repository: ido4-dev/ido4-plugins
+          token: ${{ secrets.MARKETPLACE_TOKEN }}
+          path: marketplace
+
+      - name: Sync plugin directory
+        run: |
+          rm -rf marketplace/plugins/ido4specs
+          mkdir -p marketplace/plugins/ido4specs
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.claude' \
+            --exclude='docs' \
+            --exclude='drafts' \
+            --exclude='reports' \
+            --exclude='*.plan.md' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            source/ marketplace/plugins/ido4specs/
+          echo "Synced plugin directory"
+
+      - name: Update marketplace manifest
+        run: |
+          python3 -c "
+          import json
+          plugin_path = 'source/.claude-plugin/plugin.json'
+          market_path = 'marketplace/.claude-plugin/marketplace.json'
+          plugin = json.load(open(plugin_path))
+          d = json.load(open(market_path))
+          for p in d['plugins']:
+              if p['name'] == 'ido4specs':
+                  p['version'] = plugin['version']
+                  p['description'] = plugin.get('description', p.get('description', ''))
+                  if 'category' in plugin:
+                      p['category'] = plugin['category']
+          json.dump(d, open(market_path, 'w'), indent=2)
+          "
+          echo "Updated marketplace.json to v${{ steps.version.outputs.version }}"
+
+      - name: Commit and push marketplace
+        run: |
+          cd marketplace
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to sync"
+            exit 0
+          fi
+          git commit -m "sync ido4specs v${{ steps.version.outputs.version }}"
+          git push
+
+      - name: Create GitHub Release
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="v${{ steps.version.outputs.version }}"
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Release $VERSION already exists — skipping"
+          else
+            gh release create "$VERSION" \
+              --title "$VERSION" \
+              --generate-notes \
+              --latest
+          fi

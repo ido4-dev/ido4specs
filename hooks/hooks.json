@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cp \"${CLAUDE_PLUGIN_ROOT}/dist/tech-spec-validator.js\" \"${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js\" 2>/dev/null || true",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "cp \"${CLAUDE_PLUGIN_ROOT}/dist/spec-validator.js\" \"${CLAUDE_PLUGIN_DATA}/spec-validator.js\" 2>/dev/null || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
