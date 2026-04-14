@@ -3,9 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
-# Build output (none yet — Phase 2 will decide whether dist/ is committed
-# or regenerated; ido4shape commits dist/spec-validator.js so we likely
-# will too, but leaving this here until Phase 2 makes the call)
+# Build output. dist/ is committed (both bundled validators with version
+# markers and SHA-256 checksums) — see SECURITY.md "Bundled Validators"
+# section. Only transient build artifacts are ignored here.
 coverage/
 *.tsbuildinfo
 

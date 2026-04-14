@@ -454,7 +454,8 @@ if [ -f "$EXAMPLE" ]; then
     fail "example-technical-spec missing 'format: tech-spec' marker"
   fi
 
-  if head -1 "$EXAMPLE" | grep -qE "^# "; then
+  # Project heading anywhere in the first 20 lines (allows HTML comment headers above)
+  if head -20 "$EXAMPLE" | grep -qE "^# [^#]"; then
     pass "example-technical-spec has project heading"
   else
     fail "example-technical-spec missing project heading"

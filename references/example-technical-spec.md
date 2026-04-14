@@ -1,3 +1,13 @@
+<!--
+  Copied from ido4/tests/fixtures/technical-spec-sample.md during Phase 2 of
+  the ido4specs extraction (2026-04-14). This is the round-trip test fixture
+  for the bundled @ido4/tech-spec-format validator (see tests/validate-plugin.sh
+  Test 4) and the canonical authoring example for the technical-spec format.
+  Both ido4specs and the monorepo CI smoke-test against equivalent fixtures —
+  if this file ever stops parsing under the bundled validator, the validator
+  drifted, not the example.
+-->
+
 # Development Context Pipeline
 > format: tech-spec | version: 1.0
 

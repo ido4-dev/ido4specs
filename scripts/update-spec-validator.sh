@@ -69,27 +69,39 @@ else
   fi
 fi
 
-# Smoke test: spec-validator requires a valid strategic spec as input.
-# We don't ship a strategic-spec fixture in ido4specs (this plugin's output is
-# technical specs), so the smoke test just verifies the CLI runs and produces
-# parser-shaped JSON — using the CLI's own --version-style self-check when
-# invoked with no argument returns exit 2 + usage error, which we accept.
-echo "Smoke testing bundle..."
-if node "$BUNDLE_FILE" /dev/null 2>&1 | python3 -c "
-import sys
-out = sys.stdin.read()
-# We expect either valid JSON output (if /dev/null happens to parse as an empty spec)
-# or a structured error — either way, not a crash.
-if 'Uncaught' in out or 'SyntaxError' in out or 'Error: Cannot' in out:
-    print('ERROR: bundle crashed', file=sys.stderr)
+# Smoke test: round-trip the bundle against the strategic-spec fixture
+# we ship for exactly this purpose. ido4specs doesn't author strategic specs,
+# but it does parse them at the start of /ido4specs:create-spec, so we
+# verify the bundle behaves correctly on a known-valid input.
+TEST_SPEC="$PLUGIN_DIR/tests/fixtures/example-strategic-spec.md"
+if [ -f "$TEST_SPEC" ]; then
+  echo "Smoke testing bundle..."
+  RESULT=$(node "$BUNDLE_FILE" "$TEST_SPEC" 2>&1) || {
+    echo "ERROR: Bundle smoke test failed"
+    echo "$RESULT"
+    rm -f "$BUNDLE_FILE"
+    exit 1
+  }
+  echo "$RESULT" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    assert 'valid' in d, 'missing valid field'
+    assert 'meta' in d, 'missing meta field'
+    assert 'metrics' in d, 'missing metrics field'
+    assert d['valid'] is True, f'fixture failed validation: {d.get(\"errors\", [])}'
+    print(f'  Result: valid={d[\"valid\"]}, groups={d[\"metrics\"][\"groupCount\"]}, caps={d[\"metrics\"][\"capabilityCount\"]}')
+except Exception as e:
+    print(f'ERROR: Invalid parser output — {e}', file=sys.stderr)
     sys.exit(1)
-print('  Result: bundle executes without crash')
-"; then
+" || {
+    echo "ERROR: Bundle output is not valid parser JSON or fixture failed"
+    rm -f "$BUNDLE_FILE"
+    exit 1
+  }
   echo "Smoke test passed."
 else
-  echo "ERROR: Bundle smoke test failed"
-  rm -f "$BUNDLE_FILE"
-  exit 1
+  echo "WARNING: No test fixture found at $TEST_SPEC — skipping smoke test"
 fi
 
 # Write version marker
