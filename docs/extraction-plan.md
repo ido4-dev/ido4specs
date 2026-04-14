@@ -1,8 +1,8 @@
 # ido4specs — extraction plan and target architecture
 
-**Status:** Phase 1 complete. Phases 2–5 pending.
+**Status:** Phases 1–3 complete on local main (nothing pushed). Phases 4–5 pending.
 **Created:** 2026-04-13
-**Last updated:** 2026-04-14 (Phase 1 landed)
+**Last updated:** 2026-04-14 (Phases 1–3 landed, local-only)
 **Scope:** Extract the strategic-spec → technical-spec authoring flow from `ido4dev` into a standalone companion plugin, `ido4specs`, and split the technical-spec parser out of `@ido4/core` into a new sibling package `@ido4/tech-spec-format`.
 
 ## Completion record
@@ -12,7 +12,7 @@
 | **0** | ✓ Done 2026-04-13 | This document |
 | **1** | ✓ Done 2026-04-14 | `ido4` monorepo commit `a898421` — `feat: extract @ido4/tech-spec-format package from @ido4/core`. `ido4-suite` commit `241371b` — suite.yml updated. Package `@ido4/tech-spec-format@0.1.0` live in the monorepo with 41 tests, bundled CLI, version contract (strict-when-present / lenient-when-absent), CRLF-normalized parser, `schemaVersion` in CLI output, Invariant-1-compliant pre-flight in `release.sh`, CI build+smoke+size checks for both bundles. Full workspace at **1772/1772 tests passing**. Not yet released to npm — will ship when `scripts/release.sh 0.8.0` runs. |
 | **2** | ✓ Done 2026-04-14 | `ido4specs` plugin scaffold complete on local `main` (5 stage-boundary commits, head `b8be1ab`, not pushed). 5 skills (`create-spec`, `synthesize-spec`, `review-spec`, `validate-spec`, `refine-spec`), 3 agents (`code-analyzer`, `technical-spec-writer`, `spec-reviewer` — all read inline, none spawned as subagents), dual bundled validators (`@ido4/tech-spec-format@0.1.0` + `@ido4/spec-format@0.7.2`) with version markers and SHA-256 checksums, minimal `SessionStart` hook, three scripts (`release.sh` with dual-bundle pre-flight + `--yes`/`--dry-run`, two update scripts), 14-test `validate-plugin.sh` (130 PASS / 0 FAIL / 0 WARN clean), three workflows (`ci.yml` active, `update-tech-spec-validator.yml` active, `sync-marketplace.yml` gated off until Phase 5), top-level docs (`LICENSE`, `SECURITY.md`, `CHANGELOG.md`, `README.md`, `CLAUDE.md`). Canonical filename scheme `-strategic-spec` / `-tech-canvas` / `-tech-spec` enforced. Full execution detail in `docs/phase-2-execution-plan.md` and `docs/phase-2-completion-record.md`. |
-| **3** | Pending | `ido4dev` slimming + `decompose-validate` → `ingest-spec` rename |
+| **3** | ✓ Done 2026-04-14 | `ido4dev` slimmed on local main in three commits: `e26dfd8` (delete authoring skills, agents, legacy command shims), `3999fb0` (rename `decompose-validate` → `ingest-spec` with slimmed body and the optional default-glob UX win from §8), `16e0f17` (positioning docs + cross-references + tests updates). `ido4specs` commit `e5e579e` relocated `docs/ingestion-enforcement.md` out of `ido4dev` into `ido4specs/docs/` — a scope addition not in the original §8 list, resolving the open question flagged in section 12. Validation after the slim: `ido4dev tests/validate-plugin.sh` = 112/0/0, `tests/compatibility.mjs` = 23/0. Suite master plan `ido4-suite/PLAN.md` Phase 9.3 marked complete in commit `87cee9f`. **Caveat:** the live manual smoke test of `/ido4dev:onboard` and `/ido4dev:ingest-spec` specified as a Phase 3 deliverable in section 9 was NOT performed — automated validation passed, but no one ran the skills end-to-end in a fresh `claude --plugin-dir` session. Deferred to Phase 5 live-release validation or an explicit user-driven smoke test. |
 | **4** | Pending | Suite integration: `interface-contracts.md` contract #6, `cross-repo-connections.md` entry |
 | **5** | Pending | Release coordination: `@ido4/tech-spec-format` to npm, `ido4specs` to marketplace, slimmed `ido4dev` release |
 
@@ -537,6 +537,10 @@ Copied from `ido4shape/scripts/release.sh` and adapted:
 
 ## 8. `ido4dev` changes — what to delete and slim
 
+### Status
+
+✓ **Phase 3 complete 2026-04-14** on `ido4dev` local main (not pushed). Three commits: `e26dfd8` (deletions), `3999fb0` (rename + slim), `16e0f17` (positioning + cross-references). Plus a scope addition — the relocation of `docs/ingestion-enforcement.md` to `ido4specs/docs/` in `ido4specs` commit `e5e579e`. See section 12 for the full trace and the `ido4-suite/PLAN.md` Phase 9.3 entry (commit `87cee9f`) for the checklist view. The body below is the plan as it was executed; deviations and additions are noted inline where they occurred.
+
 ### Delete (move to ido4specs)
 
 - `skills/decompose/` — fully moved
@@ -579,13 +583,15 @@ Stage 3: Call ingest_spec with dryRun=false, report created issues
 - `plugin.json` description — replaced to match new scope
 - `package.json` description — same
 - `scripts/release.sh` — update the validation command if any moved files were referenced
+- **Added in Phase 3 execution, not in the original plan:** `skills/sandbox-explore/SKILL.md` Option 13 ("Full Pipeline") was rewritten. It previously chained `/ido4dev:decompose → decompose-tasks → decompose-validate`, all of which were being deleted. Per user direction, the walkthrough was rewritten to chain `/ido4specs:create-spec → synthesize-spec → review-spec → validate-spec → /ido4dev:ingest-spec` instead, positioning `ido4specs` as an installed prerequisite for the demo flow. Option 13's execution logic now checks for `ido4specs` installation and reports the prerequisite if missing, rather than invoking a deleted skill.
+- **Scope addition:** `docs/ingestion-enforcement.md` was moved out of `ido4dev` into `~/dev-projects/ido4specs/docs/ingestion-enforcement.md` (`ido4specs` commit `e5e579e`). Pre-extraction the doc sat in `ido4dev` because that plugin owned both the authoring agents and the `ingest_spec` MCP call. Post-extraction, the authoring-side assertions the doc audits live in `ido4specs` (the moved agents) and the enforcement code lives in `@ido4/core` — neither is an `ido4dev` concern. Content updates applied during the move: `decompose-tasks` → `synthesize-spec` references throughout, `decompose-validate` Stage 1 → `ido4specs:review-spec` references, "Scope and repo placement" section rewritten, silent-failure gap remediation options extended to include `ido4specs:validate-spec` bundled pre-ingest validation. No test-anchor claims changed. The test harness that anchors the doc's claims (`tests/round3-agent-artifact.mjs`, `tests/enforcement-probes.mjs`, `tests/fixtures/round3-agent-artifact.md`) stays in `ido4dev/tests/` for now because those scripts import `@ido4/core` from `ido4dev`'s `node_modules` via the MCP install — a future natural move is to reparent them into the `@ido4/tech-spec-format` package tests in the monorepo, but that's out of scope for Phase 9.
 
 ### Verification
 
-- `bash tests/validate-plugin.sh` passes after changes
-- `tests/compatibility.mjs` still passes
-- `claude plugin validate .` passes
-- A manual smoke test: `/ido4dev:onboard` still initializes a project cleanly; `/ido4dev:ingest-spec` accepts a pre-existing technical spec and creates issues
+- `bash tests/validate-plugin.sh` passes after changes → ✓ **112 passed / 0 failed / 0 warnings**
+- `tests/compatibility.mjs` still passes → ✓ **23 passed / 0 failed** (the `criticalTools` list also lost `parse_strategic_spec` in the same commit, since no `ido4dev` skill calls it anymore)
+- `claude plugin validate .` passes → ✓ (runs as the last check inside `validate-plugin.sh`)
+- A manual smoke test: `/ido4dev:onboard` still initializes a project cleanly; `/ido4dev:ingest-spec` accepts a pre-existing technical spec and creates issues → ⚠️ **NOT performed in Phase 3.** Automated validation passed, but no one ran the skills end-to-end in a fresh `claude --plugin-dir` session. The manual smoke test is deferred to either Phase 5 live-release validation (which ships an externally-visible release that will exercise the skills naturally) or an explicit user-driven smoke test in a dedicated session. Worth running before Phase 5 so the release doesn't carry latent end-to-end bugs.
 
 ---
 
@@ -609,13 +615,18 @@ Scope: create the plugin directory tree at `~/dev-projects/ido4specs/`. Copy ski
 
 Rollback: delete the directory. Nothing in `ido4` or `ido4dev` has changed.
 
-### Phase 3 — `ido4dev` slimming
+### Phase 3 — `ido4dev` slimming ✓ Complete 2026-04-14
 
 Scope: delete the skills and agents that moved. Rename and slim `decompose-validate` → `ingest-spec`. Update CLAUDE.md, plugin.json, onboard skill references. Run `tests/validate-plugin.sh` and `tests/compatibility.mjs`. Smoke-test `/ido4dev:onboard` and `/ido4dev:ingest-spec` manually.
 
-**Deliverable**: `ido4dev` validation clean, manual smoke test passes.
+**Deliverable** (as executed):
+- ✓ `ido4dev` validation clean — `tests/validate-plugin.sh` = 112/0/0, `tests/compatibility.mjs` = 23/0
+- ✓ Three slim commits on `ido4dev` local main: `e26dfd8`, `3999fb0`, `16e0f17`
+- ✓ Scope addition: `docs/ingestion-enforcement.md` relocated to `ido4specs/docs/` (`ido4specs` commit `e5e579e`) — see section 12 for the trace
+- ✓ Suite master plan updated: `ido4-suite/PLAN.md` Phase 9.3 marked complete in commit `87cee9f`
+- ⚠️ Manual smoke test of `/ido4dev:onboard` and `/ido4dev:ingest-spec` NOT performed — deferred to Phase 5 live-release validation or a dedicated user-driven smoke session. Automated validation alone does not prove end-to-end correctness of the renamed skill or the default-glob Stage 0 logic.
 
-Rollback: revert the commit. `ido4specs` continues to exist in its own directory; nothing ties it to `ido4dev` at this point.
+Rollback: revert the three `ido4dev` commits (`git revert 16e0f17 3999fb0 e26dfd8`). `ido4specs` continues to exist in its own directory; nothing ties it to `ido4dev` at this point. The `ido4specs` commit `e5e579e` (doc relocate) can optionally be reverted as well, or left in place — the doc works correctly in either repo.
 
 ### Phase 4 — Suite integration
 
@@ -731,30 +742,30 @@ These items are set aside deliberately and should be revisited once the extracti
 
 ### Last night's investigation artifacts (ido4dev, currently untracked)
 
-- `docs/ingestion-enforcement.md` — empirical ground-truth doc for what `@ido4/core`'s ingestion pipeline enforces. Useful content but scoped to the old location. After the split, its content is likely to be replaced or absorbed into `@ido4/tech-spec-format`'s README + the new `technical-spec-format.md` reference in `ido4specs`. **Revisit after Phase 2** to decide: preserve, absorb, or discard.
-- `tests/enforcement-probes.mjs` — 12 synthetic probes against parser behavior. Useful as a starting base for `@ido4/tech-spec-format/tests/parser.test.ts`. **Revisit during Phase 1** as a source of test fixtures.
-- `tests/round3-agent-artifact.mjs` + `tests/fixtures/round3-agent-artifact.md` — behavior-level test against a real agent-produced artifact. Useful as an integration test in the new package. **Revisit during Phase 1** as the primary real-world fixture.
-- `reports/round-4-rule-audit.md` — the pre-edit inventory plan for the Round 4 rule audit. This document supersedes it: the rule audit is now applied in context as part of the agent moves in Phase 2. **Discard** after Phase 2 completes.
-- `CLAUDE.md` working-style edit (already committed to the working tree but untracked) — keep as-is. Independent of this work.
+- `docs/ingestion-enforcement.md` — ✓ **Resolved in Phase 3.** The "preserve, absorb, or discard" decision collapsed into a fourth option not anticipated here: **relocate**. The doc was moved to `~/dev-projects/ido4specs/docs/ingestion-enforcement.md` (`ido4specs` commit `e5e579e`) because its subject matter (rule audit of authoring-side assertions vs. `@ido4/core` enforcement) became cross-plugin after the split and its natural home is now `ido4specs` where the authoring agents it audits live. Content was updated during the move (decompose-tasks → synthesize-spec references, scope-and-placement rewrite). `docs/` directory in `ido4dev` is now empty and removed.
+- `tests/enforcement-probes.mjs` — ⚠️ **Still untracked in `ido4dev`.** Phase 1's verification used existing `@ido4/tech-spec-format` tests rather than adopting these probes directly, so the "revisit during Phase 1" window passed without action. The file still has value as behavior-level regression infrastructure and will block `scripts/release.sh` pre-flight in Phase 5 (untracked-file check). **Next action before Phase 5 release:** commit these as a dedicated "chore: preserve round-4 parser regression harness" commit on `ido4dev` main, or move them into the `ido4` monorepo's `@ido4/tech-spec-format` package tests.
+- `tests/round3-agent-artifact.mjs` + `tests/fixtures/round3-agent-artifact.md` — ⚠️ **Still untracked in `ido4dev`.** Same status and same remediation path as `enforcement-probes.mjs` above. These are the primary real-world-artifact regression tests and should not be lost.
+- `reports/round-4-rule-audit.md` — ⚠️ **Still untracked.** The plan said "Discard after Phase 2 completes." Phase 2 is done. Technically this can be `git clean -f`ed now, but the memory file `project_e2e_decompose_findings.md` flagged it as "SUPERSEDED by ido4specs extraction" rather than "lost", so the content was absorbed into that memory and the on-disk file is redundant. **Recommended action before Phase 5 release:** delete the untracked file with `rm` (not `git rm` since never tracked) as part of the working-tree cleanup sweep.
+- `CLAUDE.md` working-style edit (already committed to the working tree but untracked) — ✓ Already landed in a prior commit on `ido4dev` main. No pending action.
 
 ### Other items surfaced during investigation
 
 - **ido4shape `refine-spec/SKILL.md:20` text cleanup.** The skill text mentions "technical spec (has effort/type/ai fields)" as a format branch. Per user clarification, this refers to technical-persona sessions within strategic authoring, not technical-spec files. The wording is stale — worth a 5-minute edit later to remove the confusing dual-mode framing. **Revisit after extraction lands.**
-- **`compatibility.mjs` behavior-level hardening.** Interface contract #5 notes a gap: the test only checks tool names, not behavior. The round3 fixture + probes from last night are a candidate behavior-level test. **Revisit after Phase 3** — by then, `ido4dev`'s scope is clearer and the right test boundary is easier to see.
+- **`compatibility.mjs` behavior-level hardening.** Interface contract #5 notes a gap: the test only checks tool names, not behavior. The round3 fixture + probes from last night are a candidate behavior-level test. **Revisit after Phase 3** — by then, `ido4dev`'s scope is clearer and the right test boundary is easier to see. **Gate now open as of 2026-04-14:** Phase 3 shipped. `ido4dev` scope is now "governance only, consumes a validated technical spec via `ingest_spec`" — the right test boundary is behavior-level verification that `ingest_spec` round-trips a known-good technical spec into the expected hierarchy under each methodology profile. The round3 fixture is directly reusable. Still not urgent; track as follow-up work, not blocking.
 - **`@ido4/spec-format` CLI `--version` flag.** If we add a `--version` flag to `@ido4/tech-spec-format`'s CLI (recommended for scripting/debugging), mirror it in `@ido4/spec-format`'s CLI for consistency. **Revisit during Phase 1.**
 
 ---
 
 ## 13. Execution checkpoints
 
-| Phase | Deliverable | Review gate | Reversibility |
-|---|---|---|---|
-| **0** | This document | User sign-off before Phase 1 | N/A |
-| **1** | `@ido4/tech-spec-format` package, `@ido4/core` updated, tests green | User review of the package + core changes | Revert commit |
-| **2** | `ido4specs` local plugin, `validate-plugin.sh` clean | User review of the plugin layout + smoke test | Delete directory |
-| **3** | `ido4dev` slimmed, tests + compatibility green | User review + manual smoke test | Revert commit |
-| **4** | Suite manifest + interface-contracts updated, audit clean | User review of suite commits | Revert suite commit |
-| **5** | All three artifacts released, marketplace updated | Externally visible — no further review gates; each release is a deliberate action | Patch releases / manifest revert |
+| Phase | Deliverable | Review gate | Reversibility | Status |
+|---|---|---|---|---|
+| **0** | This document | User sign-off before Phase 1 | N/A | ✓ 2026-04-13 |
+| **1** | `@ido4/tech-spec-format` package, `@ido4/core` updated, tests green | User review of the package + core changes | Revert commit | ✓ 2026-04-14 |
+| **2** | `ido4specs` local plugin, `validate-plugin.sh` clean | User review of the plugin layout + smoke test | Delete directory | ✓ 2026-04-14 (head `b8be1ab`, live smoke test deferred) |
+| **3** | `ido4dev` slimmed, tests + compatibility green | User review + manual smoke test | Revert commit | ✓ 2026-04-14 (three commits `e26dfd8` → `3999fb0` → `16e0f17`; **manual smoke test still pending**) |
+| **4** | Suite manifest + interface-contracts updated, audit clean | User review of suite commits | Revert suite commit | Pending |
+| **5** | All three artifacts released, marketplace updated | Externally visible — no further review gates; each release is a deliberate action | Patch releases / manifest revert | Pending |
 
 **Between-phase protocol**: at the end of each phase, report status, pause, wait for "proceed" before starting the next. If a phase reveals a planning error, report and re-plan rather than working around it.
 
@@ -775,4 +786,4 @@ When this extraction is complete, the following should all be true:
 
 ---
 
-**Next action:** user reviews this document and either approves Phase 1 or requests changes. Until sign-off, nothing ships.
+**Next action (as of 2026-04-14):** Phases 1–3 are complete on local main across `ido4`, `ido4specs`, and `ido4dev`. Nothing has been pushed, nothing has been released. The next phase the user sequences is either **Phase 4** (suite integration — `interface-contracts.md` contract #6, `cross-repo-connections.md` entry, `suite.yml` tier-1 entry for `ido4specs`, `audit-suite.sh` clean) or **Phase 5** (release coordination — `ido4` monorepo 0.8.0 to npm, `ido4specs` v0.1.0 to marketplace via a new GitHub repo, slimmed `ido4dev` v0.8.0 via marketplace sync). Phase 4 has no external effects and can land locally; Phase 5 is externally visible and irreversible by nature, and the three artifacts ship in strict dependency order per section 9. **Pre-Phase-5 housekeeping on `ido4dev`:** the four untracked Round-4 artifacts (`tests/enforcement-probes.mjs`, `tests/round3-agent-artifact.mjs`, `tests/fixtures/round3-agent-artifact.md`, `reports/round-4-rule-audit.md` — see section 12) must be committed or removed, because `ido4dev/scripts/release.sh` pre-flight rejects untracked files. A dedicated user-driven live smoke test of `/ido4dev:onboard` and `/ido4dev:ingest-spec` in a fresh `claude --plugin-dir` session is also recommended before Phase 5 cuts a real release.
