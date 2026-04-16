@@ -1,3 +1,12 @@
+<!--
+  Example strategic spec for trying the ido4specs pipeline without ido4shape.
+  Copied from ido4/tests/fixtures/strategic-spec-context-pipeline.md during the
+  ido4specs extraction (2026-04-14). A small, parseable spec with 2 groups and
+  5 capabilities — runs through the full pipeline in ~10 minutes.
+
+  Usage: /ido4specs:create-spec references/example-strategic-spec.md
+-->
+
 # Development Context Pipeline
 > format: strategic-spec | version: 1.0
 

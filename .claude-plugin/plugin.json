@@ -1,7 +1,7 @@
 {
   "name": "ido4specs",
   "description": "Turn a strategic spec into a structurally-validated technical spec on disk. Companion plugin for engineers planning implementation work from an ido4shape strategic spec. Reads the strategic spec, explores your codebase via parallel Explore subagents, produces a technical canvas (name-tech-canvas.md), then synthesizes a methodology-neutral technical spec (name-tech-spec.md) with capability decomposition, task metadata (effort/risk/type/ai), and a dependency graph. Any downstream tool — or ido4dev:ingest-spec — can turn the file into GitHub issues.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "category": "productivity",
   "author": {
     "name": "Bogdan Coman",

@@ -33,7 +33,13 @@ Both bundles:
 - Have SHA-256 checksums recorded in `dist/.tech-spec-format-checksum` and `dist/.spec-format-checksum`
 - Have version markers in `dist/.tech-spec-format-version` and `dist/.spec-format-version`
 
-The `SessionStart` hook copies both bundles from `${CLAUDE_PLUGIN_ROOT}/dist/` into `${CLAUDE_PLUGIN_DATA}/` so skills can invoke them via `node "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js" <path>`. This is the only hook the plugin ships. No `PreToolUse`, `Stop`, `PreCompact`, or `UserPromptSubmit` hooks — `ido4specs` is a transform pipeline, not a dialogue tool, and has no runtime state to inject or check.
+The `SessionStart` hook runs three commands:
+
+1. Copies `dist/tech-spec-validator.js` → `${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js`
+2. Copies `dist/spec-validator.js` → `${CLAUDE_PLUGIN_DATA}/spec-validator.js`
+3. Runs `scripts/session-status.sh` — a read-only script that echoes the plugin version, scans for existing `*-tech-canvas.md` and `*-tech-spec.md` artifacts in the project, and outputs a one-line contextual status (e.g., "Pipeline: canvas from a previous session at specs/X-tech-canvas.md. Next: /ido4specs:synthesize-spec"). The output is injected into the model's context so the first response is contextual. The script reads only filenames (via `ls` globbing) — it never reads file contents, makes network requests, or modifies any files.
+
+No `PreToolUse`, `Stop`, `PreCompact`, or `UserPromptSubmit` hooks — `ido4specs` is a transform pipeline, not a dialogue tool, and has no runtime state to inject or check beyond the one-shot session-start scan.
 
 ## Sub-Agents
 
