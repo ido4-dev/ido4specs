@@ -73,12 +73,12 @@ bash scripts/update-tech-spec-validator.sh <version>     # @ido4/tech-spec-forma
 bash scripts/update-spec-validator.sh <version>          # @ido4/spec-format
 ```
 
-CI runs `tests/validate-plugin.sh` on every push/PR. The marketplace sync workflow (`.github/workflows/sync-marketplace.yml`) ships gated off until Phase 5 of the extraction lands the marketplace entry and `MARKETPLACE_TOKEN` secret.
+CI runs `tests/validate-plugin.sh` on every push/PR. The marketplace sync workflow (`.github/workflows/sync-marketplace.yml`) is active as of 2026-04-15 (Phase 9.5.6); every successful CI run on main pushes the plugin source to `ido4-plugins/plugins/ido4specs/`.
 
 ## Reference Repositories
 
 - [`~/dev-projects/ido4shape/`](https://github.com/ido4-dev/ido4shape) — packaging reference. The `ido4specs` plugin layout (plugin.json, scripts/release.sh, tests/validate-plugin.sh, .github/workflows/, hooks plumbing) was adapted from `ido4shape`'s canonical implementation. Skill internals are NOT borrowed — `ido4shape` targets Claude Cowork / Desktop and uses plugin-defined subagents that don't work reliably in Claude Code. Do not edit `ido4shape` as part of `ido4specs` work.
-- [`~/dev-projects/ido4dev/`](https://github.com/ido4-dev/ido4dev) — content reference. The `decompose`, `decompose-tasks`, `decompose-validate` skills and the `code-analyzer` / `technical-spec-writer` / `spec-reviewer` agents were ported here with a language pass and renamed (Phase 2 of the extraction). Phase 3 will slim `ido4dev` to a governance-only plugin by deleting the moved skills.
+- [`~/dev-projects/ido4dev/`](https://github.com/ido4-dev/ido4dev) — content reference. The `decompose`, `decompose-tasks`, `decompose-validate` skills and the `code-analyzer` / `technical-spec-writer` / `spec-reviewer` agents were ported here with a language pass and renamed during Phase 2 of the extraction. Phase 3 slimmed `ido4dev` to a governance-only plugin; it was released as `v0.8.0` on 2026-04-15.
 - [`~/dev-projects/ido4/`](https://github.com/ido4-dev/ido4) — monorepo with the npm packages. The technical-spec validator bundle lives at `packages/tech-spec-format/dist/tech-spec-validator.bundle.js` and the strategic-spec validator bundle at `packages/spec-format/dist/spec-validator.bundle.js`. Both are pulled into this plugin's `dist/` via the update scripts.
 - [`~/dev-projects/ido4-suite/`](https://github.com/ido4-dev/ido4-suite) — meta-repo. Canonical docs for release architecture, prompt strategy, interface contracts, cross-repo connections. See the Suite Coordination section below.
 
@@ -98,11 +98,11 @@ This repo is part of the ido4 suite. Cross-repo release patterns, audit tooling,
 
 - `docs/release-architecture.md` — the canonical 4-layer release pattern this repo follows (CI gating, marketplace sync, sync auto-PR pattern)
 - `docs/prompt-strategy.md` — degrees of freedom, rules vs principles, Opus 4.5/4.6 language guidance, skill architecture patterns, two-layer validation pattern. Read this first before writing or auditing skills, agents, or prompts.
-- `docs/interface-contracts.md` — cross-repo contract index. Contract #6 (Technical Spec Format) lands during Phase 4 of the extraction.
+- `docs/interface-contracts.md` — cross-repo contract index. Contract #6 (Technical Spec Format) is the `ido4specs → @ido4/core ingestion` trust boundary.
 - `docs/cross-repo-connections.md` — dispatch map, shared secrets, trust boundaries
 - `scripts/audit-suite.sh` — verifies all repos against the canonical pattern. Run after any release/CI changes: `bash ~/dev-projects/ido4-suite/scripts/audit-suite.sh`
-- `PLAN.md` — master plan tracking in-progress cross-repo work. The ido4specs extraction is Phase 9.
-- `suite.yml` — machine-readable suite manifest. `ido4specs` is added as a Tier 1 plugin during Phase 4.
+- `PLAN.md` — master plan tracking cross-repo work. The `ido4specs` extraction was Phase 9; completed 2026-04-15.
+- `suite.yml` — machine-readable suite manifest. `ido4specs` is listed as a Tier 1 plugin.
 
 Before changing release scripts, CI workflows, or cross-repo dispatch: read `release-architecture.md` first. After changes: run the audit script.
 

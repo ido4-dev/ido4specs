@@ -1,5 +1,7 @@
 # Phase 2 Completion Record — ido4specs plugin scaffold
 
+> **Historical record.** This document captures the state at the end of Phase 2 (2026-04-14). Phase 4 landed 2026-04-15 (suite integration) and Phase 5 landed 2026-04-15 (release coordination). See `extraction-plan.md` for the current status across all phases. The "deferred" items listed in section 12 below are all resolved as of 2026-04-15.
+
 **Completed:** 2026-04-14
 **Status:** ✓ Done on local `main`, not pushed (GitHub repo creation is Phase 5)
 **Plan:** [`docs/phase-2-execution-plan.md`](phase-2-execution-plan.md)
