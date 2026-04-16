@@ -21,14 +21,28 @@ strategic spec (ido4shape)
 
 `/ido4specs:refine-spec` handles iterative edits to an existing technical spec, with structural re-validation after every edit pass.
 
+<!-- BEGIN SKILL INVENTORY -->
 ## Skills
 
-- **`/ido4specs:create-spec`** — Phase 1. Strategic spec + codebase → technical canvas. Parses the strategic spec via the bundled validator, detects project mode, spawns parallel `Explore` subagents for codebase analysis, synthesizes the canvas inline.
-- **`/ido4specs:synthesize-spec`** — Phase 2. Canvas → technical spec. Pure transform with auto-validation at the end.
-- **`/ido4specs:review-spec`** — Phase 3a. Qualitative review of a technical spec via the `spec-reviewer` agent on Sonnet. Layer 2 of the two-layer validation pattern.
-- **`/ido4specs:validate-spec`** — Phase 3b. Structural validation via the bundled `@ido4/tech-spec-format` parser, plus 8 content assertions. Layer 1 of the two-layer pattern.
-- **`/ido4specs:refine-spec`** — Edit an existing technical spec via natural-language instructions. Re-validates after every edit pass.
-- **`/ido4specs:doctor`** — Plugin health diagnostics. Checks validators, versions, checksums, round-trip test.
+### Commands
+
+| Skill | Description |
+|-------|-------------|
+| `/ido4specs:create-spec` | Phase 1 of the technical-spec pipeline. |
+| `/ido4specs:doctor` | Diagnostic checks for the ido4specs plugin. |
+| `/ido4specs:refine-spec` | Edits an existing technical spec artifact using natural-language instructions. |
+| `/ido4specs:review-spec` | Runs a qualitative review of a technical spec artifact — two-stage protocol (format compliance then content quality) ... |
+| `/ido4specs:synthesize-spec` | Phase 2 of the technical-spec pipeline. |
+| `/ido4specs:validate-spec` | Validates a technical spec artifact for format compliance and content quality. |
+
+### Auto-triggered skills
+
+These activate automatically during conversation when relevant — you don't invoke them directly.
+
+| Skill | Description |
+|-------|-------------|
+| `help` | Explains what ido4specs does, what skills are available, how the pipeline works, and how to get started. |
+<!-- END SKILL INVENTORY -->
 
 ## Getting started
 

@@ -1,0 +1,26 @@
+name: Token Health Check
+
+# Weekly check that MARKETPLACE_TOKEN hasn't expired.
+# If this workflow fails, regenerate the token at github.com/settings/tokens
+# and update the MARKETPLACE_TOKEN secret in this repo's settings.
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday 9:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify MARKETPLACE_TOKEN is valid
+        env:
+          GH_TOKEN: ${{ secrets.MARKETPLACE_TOKEN }}
+        run: |
+          if gh api repos/ido4-dev/ido4-plugins --silent; then
+            echo "MARKETPLACE_TOKEN is valid"
+          else
+            echo "ERROR: MARKETPLACE_TOKEN is expired or invalid"
+            echo "Regenerate at: https://github.com/settings/personal-access-tokens"
+            echo "Then update the secret in: https://github.com/ido4-dev/ido4specs/settings/secrets/actions"
+            exit 1
+          fi
