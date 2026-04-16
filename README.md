@@ -28,6 +28,7 @@ strategic spec (ido4shape)
 - **`/ido4specs:review-spec`** — Phase 3a. Qualitative review of a technical spec via the `spec-reviewer` agent on Sonnet. Layer 2 of the two-layer validation pattern.
 - **`/ido4specs:validate-spec`** — Phase 3b. Structural validation via the bundled `@ido4/tech-spec-format` parser, plus 8 content assertions. Layer 1 of the two-layer pattern.
 - **`/ido4specs:refine-spec`** — Edit an existing technical spec via natural-language instructions. Re-validates after every edit pass.
+- **`/ido4specs:doctor`** — Plugin health diagnostics. Checks validators, versions, checksums, round-trip test.
 
 ## Getting started
 
@@ -62,6 +63,25 @@ Then run the pipeline:
 
 At each step, the filename tells you which artifact you're looking at: `-strategic-spec.md` for strategic, `-tech-canvas.md` for the intermediate canvas, `-tech-spec.md` for the final technical spec. `specs/*-tech-*.md` is a clean glob for everything `ido4specs` produced.
 
+### Don't have a strategic spec?
+
+If you don't have ido4shape, you can write a strategic spec by hand (it needs a `> format: strategic-spec | version: 1.0` marker). Or try the built-in example:
+
+```
+/ido4specs:create-spec references/example-strategic-spec.md
+```
+
+### Expected duration and compute
+
+The full pipeline (`create-spec` + `synthesize-spec`) uses Opus-level compute for inline synthesis:
+
+| Spec size | create-spec | synthesize-spec | Total |
+|---|---|---|---|
+| Small (5–10 capabilities) | 3–10 min | 3–10 min | ~10–20 min |
+| Large (25+ capabilities) | 10–25 min | 10–20 min | ~25–40 min |
+
+`validate-spec`, `review-spec`, and `refine-spec` are much faster (1–5 minutes each). The progress indicator shows active token generation during long operations — as long as it's moving, synthesis is proceeding normally.
+
 ## Bundled validators
 
 `ido4specs` ships two zero-dependency parser bundles:
@@ -76,9 +96,11 @@ Both are committed to git, version-marked, checksummed, and copied to `${CLAUDE_
 - [`docs/extraction-plan.md`](docs/extraction-plan.md) — full plan for extracting ido4specs from `ido4dev`
 - [`docs/phase-2-execution-plan.md`](docs/phase-2-execution-plan.md) — concrete porting plan for the plugin scaffold
 - [`references/technical-spec-format.md`](references/technical-spec-format.md) — canonical format reference for the technical spec
-- [`references/example-technical-spec.md`](references/example-technical-spec.md) — minimal parseable example
+- [`references/example-technical-spec.md`](references/example-technical-spec.md) — minimal parseable technical-spec example
+- [`references/example-strategic-spec.md`](references/example-strategic-spec.md) — minimal parseable strategic-spec example (try it with `create-spec`)
 - [`SECURITY.md`](SECURITY.md) — what the plugin creates, where data lives, hook surface
 - [`CLAUDE.md`](CLAUDE.md) — development context for working in this repo
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to modify skills, run tests, release
 
 ## License
 

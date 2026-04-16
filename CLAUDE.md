@@ -15,6 +15,8 @@ Pipeline: `ido4shape → strategic spec → ido4specs → technical spec → ido
 | `/ido4specs:review-spec` | 3a | Qualitative review of a technical spec via the `spec-reviewer` agent on Sonnet. Layer 2 of the two-layer validation pattern. |
 | `/ido4specs:validate-spec` | 3b | Structural validation via the bundled `@ido4/tech-spec-format` parser, plus 8 content assertions. Layer 1 of the two-layer pattern. |
 | `/ido4specs:refine-spec` | — | Edit an existing technical spec via natural-language instructions. Re-validates after every edit pass. |
+| `/ido4specs:doctor` | — | Plugin health diagnostics. Checks bundled validators, versions, checksums, round-trip test. Run when something seems broken. |
+| `help` (auto-triggered) | — | Explains what ido4specs does, the pipeline, available skills, getting started. Activates when the user asks for help or seems confused about the plugin. |
 
 ## Agents
 
@@ -74,6 +76,119 @@ bash scripts/update-spec-validator.sh <version>          # @ido4/spec-format
 ```
 
 CI runs `tests/validate-plugin.sh` on every push/PR. The marketplace sync workflow (`.github/workflows/sync-marketplace.yml`) is active as of 2026-04-15 (Phase 9.5.6); every successful CI run on main pushes the plugin source to `ido4-plugins/plugins/ido4specs/`.
+
+## E2E Testing Protocol
+
+When monitoring a live `ido4specs` session (the user running skills in a separate terminal against a real project), follow this protocol. Reports live in `reports/e2e-NNN-{project-name}.md`. Before starting a new round, read the most recent report for continuity.
+
+### Setup
+
+Two sessions in parallel:
+- **Test session:** A project folder with the `ido4specs` plugin loaded (`claude --plugin-dir ~/dev-projects/ido4specs` or installed from marketplace). The user runs skills and pastes output to the monitor.
+- **Monitor session:** This repo. Evaluates behavior against the skill and agent definitions in `skills/` and `agents/`. Logs observations in real time.
+
+### Architectural invariants (check throughout, every skill)
+
+These are the four bets from the extraction. Any violation is a **Critical** observation:
+
+| Invariant | What to watch for |
+|---|---|
+| **Parser-as-seam** | Every structural validation goes through the bundled `node "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js"` or `spec-validator.js`. No back-channel parser calls, no reimplemented checks, no "let me just verify the format manually." |
+| **Methodology neutrality** | No references to Scrum, Shape-Up, Hydro, BRE, methodology profiles, container types, sprints, waves, or cycles in any skill output. The technical spec is methodology-neutral. |
+| **Inline execution** | `code-analyzer.md`, `technical-spec-writer.md`, `spec-reviewer.md` are read as templates/references by main Claude — never spawned via the `Agent` tool as plugin-defined subagents. Only built-in `Explore` subagents (in `create-spec` Stage 1a) are spawned. If you see "`Agent(code-analyzer)`" or similar, the inline-execution pattern has regressed and it will likely hang at ~25–30 tool uses. |
+| **Zero runtime coupling** | No `mcp__` tool calls, no `parse_strategic_spec`, no `ingest_spec`, no `@ido4/mcp` references. The only cross-plugin signal is the filesystem probe for `.ido4/project-info.json` in the cross-sell footer. |
+
+### Pipeline-specific checkpoints
+
+The `ido4specs` pipeline is linear: `create-spec → synthesize-spec → review-spec / validate-spec → refine-spec`. Each skill has specific things to verify beyond the architectural invariants.
+
+**`/ido4specs:create-spec <strategic-spec-path>`**
+
+| Stage | Checkpoint |
+|---|---|
+| 0 | Calls bundled `spec-validator.js` (not `parse_strategic_spec`). Presents parsed summary with group/capability counts and dependency structure. |
+| 0 | Derives `{spec-name}` correctly via the §5.3 derivation rule (strips `-spec` or `-strategic-spec` suffix). |
+| 0.5 | Discovers artifact directory (finds existing `specs/` or creates one). States the mode (`existing` / `greenfield-with-context` / `greenfield-standalone`) with justification. |
+| 0.5 | If strategic spec is outside the artifact directory: emits the **co-location nudge** (one-time informational, not blocking). |
+| 0.5 | Reports both the input path and the planned output paths (`{spec-name}-tech-canvas.md`, `{spec-name}-tech-spec.md`). |
+| 1a | Spawns **built-in `Explore` subagents** (not plugin-defined). Brief per target is under ~300 tokens. Subagents run in parallel in a single message with multiple tool uses. |
+| 1b | Reads the raw strategic-spec text for verbatim context preservation. |
+| 1c | Synthesizes the canvas **inline** following `agents/code-analyzer.md` template. Every strategic capability gets its own `## Capability:` section — no summary tables, no collapsing. |
+| 1d | Verifies `## Capability:` count in the written canvas matches the parsed capability count from Stage 0. Mismatch = incomplete canvas. |
+| End | Writes to `{artifact-dir}/{spec-name}-tech-canvas.md`. End message points at `/ido4specs:synthesize-spec`. Stops — does not auto-invoke the next skill. |
+
+**`/ido4specs:synthesize-spec <canvas-path>`**
+
+| Stage | Checkpoint |
+|---|---|
+| 0 | Derives `{spec-name}` from the canvas path (strips `-tech-canvas`). |
+| 1a | Validates canvas has per-capability sections, strategic context, cross-cutting concerns. Refuses to proceed on an incomplete canvas. |
+| 1b | Decomposes inline following `agents/technical-spec-writer.md` template. Output includes `> format: tech-spec \| version: 1.0` marker. Task refs use the `[A-Z]{2,5}-\d{2,3}[A-Z]?` pattern. |
+| 1c | Reports capability + task counts. |
+| 1d | **Auto-runs `node tech-spec-validator.js`** on the written spec. Reports PASS or first 3 errors. This is the critical smoke test for the parser-as-seam bet. |
+| End | Writes to `{artifact-dir}/{spec-name}-tech-spec.md`. Cross-sell footer checks for `.ido4/project-info.json` and emits the appropriate variant. |
+
+**`/ido4specs:validate-spec <tech-spec-path>`**
+
+| Pass | Checkpoint |
+|---|---|
+| 1 | Runs bundled `tech-spec-validator.js`. Interprets errors intelligently (broken deps → suggests correct target, cycles → identifies which edge to reverse, invalid metadata → shows allowed values). Does not just relay raw parser output. |
+| 2 | Applies the 8 content assertions (T0–T8). Each classified as FAIL or WARNING with specific per-task or per-capability references. |
+| Verdict | PASS / PASS WITH WARNINGS / FAIL. Next-step guidance matches the verdict (refine-spec for fixes, review-spec or ingest-spec for clean pass). Cross-sell footer present on PASS. |
+
+**`/ido4specs:review-spec <tech-spec-path>`**
+
+| Stage | Checkpoint |
+|---|---|
+| 1b | Format compliance check against the parser contract (same checks as validate-spec Pass 1, but this is the independent LLM-driven review, not the bundled validator). |
+| 1c | Quality assessment — descriptions code-grounded, success conditions verifiable, metadata calibrated, capabilities coherent (2–8 tasks each). |
+| 1d | Downstream awareness section — flags `ai: human`, `risk: critical`, heavy cross-capability deps as informational, not as governance enforcement. |
+| 1e | Produces the **Spec Review Report** in the structured format from `agents/spec-reviewer.md`: Summary, Errors, Warnings, Suggestions, Downstream Notes, Dependency Graph. |
+
+**`/ido4specs:refine-spec <tech-spec-path>`**
+
+| Check | Checkpoint |
+|---|---|
+| Scope | Refuses to operate on strategic specs (filename + format-marker check → redirects to ido4shape). |
+| Edit | Surfaces ripple effects before making changes ("if we split this capability, these 3 tasks need new prefixes..."). |
+| Re-validate | Runs bundled `tech-spec-validator.js` **after every edit pass**. If the edit introduced a structural regression, reports it immediately rather than leaving it for the next validate-spec run. |
+
+### Observation format
+
+Log every deviation immediately — don't batch. Each observation gets:
+
+- **ID:** Sequential within the test (OBS-01, OBS-02, ...)
+- **Type:** `bug` | `design-gap` | `behavioral-drift` | `quality-issue` | `architectural-violation` | `ux-issue`
+- **Severity:** `low` | `medium` | `high` | `critical`
+- **When:** Skill name + stage (e.g., "create-spec Stage 1a")
+- **What happened:** Actual behavior (quote the output)
+- **What was expected:** Traced to the specific skill/agent definition (file + section)
+- **Evidence:** The pasted interaction or output
+- **Fix candidate:** File and section where the fix would go
+
+Also log **positive observations** when behavior exceeds expectations — these calibrate quality and inform which design choices are working well.
+
+### Report format
+
+File: `reports/e2e-NNN-{project-name}.md`
+
+Sections:
+1. **Test Setup** — project, strategic spec, plugin version, date, which skills were exercised
+2. **Pipeline Summary** — which stages ran, what artifacts were produced, what filenames were used
+3. **Observations** — all OBS entries in chronological order
+4. **Positives** — what worked well, especially architectural invariants that held
+5. **Assessment** — overall verdict on skill quality, pipeline coherence, and readiness
+6. **Next Steps** — fixes to make, skills to re-test, design gaps to address
+
+### What to watch for (cross-cutting, any skill)
+
+- Does the skill read what it claims to read? (canvas, spec, codebase via Explore)
+- Does the output match the defined format? (sections, metadata, file naming)
+- Are intermediate review points honored? (skill stops at its boundary, doesn't auto-invoke the next skill)
+- Is strategic context preserved through the pipeline? (stakeholder attributions, success conditions, group context — nothing silently dropped between create-spec and synthesize-spec)
+- Does the cross-sell footer emit the correct variant? (probe `.ido4/project-info.json`, not hardcoded)
+- Are filename conventions honored? (`-tech-canvas.md`, `-tech-spec.md`, never `-canvas.md` or `-technical.md`)
+- Does task tracking use `TaskCreate`/`TaskUpdate` (not `TodoWrite`)?
 
 ## Reference Repositories
 

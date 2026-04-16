@@ -107,7 +107,7 @@ For each task, read its description, metadata, success conditions, and dependenc
 - Violated → **FAIL** when: cycles exist (already caught by Pass 1 — double-check)
 - Violated → **WARNING** when: excessive cross-capability dependencies suggest the capability boundaries are wrong
 
-**T8. Capability coherence.** Each capability contains 2–8 related tasks. Tasks within a capability serve the capability's purpose and share a domain. One-task capabilities usually want merging; 12-task capabilities usually want splitting.
+**T8. Capability coherence.** Each capability contains 1–8 related tasks. Tasks within a capability serve the capability's purpose and share a domain. Single-task capabilities are fine when the task is M-effort or larger — well-scoped strategic capabilities from ido4shape often decompose into exactly one coherent implementation task. Zero-task capabilities are structural errors (empty wrappers). Capabilities above 8 tasks usually want splitting.
 - Violated → **WARNING** when: task counts outside the range, OR tasks feel unrelated to their parent capability
 
 #### Framing findings for the user

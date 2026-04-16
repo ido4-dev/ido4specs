@@ -42,7 +42,7 @@ Check every structural element against the parser's expectations:
 - Effort estimates grounded in code reality (not conversation guesses)
 - Risk assessments reflect actual codebase complexity (coupling, test coverage, module maturity)
 - AI suitability appropriate (external integrations shouldn't be `full`; schema definitions can be `full`)
-- Capabilities coherent (2–8 tasks, tasks related to capability purpose)
+- Capabilities coherent (1–8 tasks, tasks related to capability purpose; single-task capabilities are fine for M-effort or larger tasks)
 - Dependency graph sensible (critical path makes sense, minimal cross-capability deps)
 
 ### Downstream awareness

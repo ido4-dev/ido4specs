@@ -174,6 +174,8 @@ Use the `Read` tool to load the strategic spec text directly. You need the raw t
 
 ### Stage 1c: Synthesize the canvas inline
 
+**Duration advisory:** For specs with 10+ capabilities, canvas synthesis typically takes 10–25 minutes. For smaller specs (under 10 capabilities), 3–10 minutes. The progress indicator shows active token generation — as long as the token count is increasing, synthesis is proceeding normally. Tell the user the expected duration before starting, so they don't mistake active synthesis for a stall.
+
 Compose the complete technical canvas following the template in `agents/code-analyzer.md`:
 
 - Use the Explore subagents' summaries for **Ecosystem Architecture** / **Codebase Overview** and for **Integration Target Analysis** / **Codebase Analysis** per capability

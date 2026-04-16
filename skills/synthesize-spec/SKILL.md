@@ -79,6 +79,8 @@ If any are missing, stop and report: *"Canvas is incomplete — [specific missin
 
 ### Stage 1b: Decompose and write the technical spec
 
+**Duration advisory:** For canvases with 10+ capabilities, spec synthesis typically takes 10–20 minutes. For smaller canvases, 3–10 minutes. Tell the user the expected duration before starting.
+
 Following the template and rules in `agents/technical-spec-writer.md`:
 
 1. **Identify shared infrastructure** across capabilities — types, interfaces, services, database changes that multiple capabilities need. Create infrastructure tasks in the most-relevant capability (earliest in the dependency chain). If the canvas reveals shared infrastructure that doesn't map to any strategic capability, create a technical-only capability with a `PLAT-`, `INFRA-`, or `TECH-` prefix, placed BEFORE strategic capabilities.

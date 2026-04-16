@@ -242,6 +242,8 @@ SKILL_DIRS=(
   "skills/review-spec"
   "skills/validate-spec"
   "skills/refine-spec"
+  "skills/doctor"
+  "skills/help"
 )
 
 for skill_dir in "${SKILL_DIRS[@]}"; do
