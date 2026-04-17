@@ -96,6 +96,51 @@ The full pipeline (`create-spec` + `synthesize-spec`) uses Opus-level compute fo
 
 `validate-spec`, `review-spec`, and `refine-spec` are much faster (1–5 minutes each). The progress indicator shows active token generation during long operations — as long as it's moving, synthesis is proceeding normally.
 
+## Visible signals
+
+`ido4specs` is **polite by default** — it stays out of the way in projects that don't use it, and surfaces relevant guidance when they do.
+
+**SessionStart context** (injected into Claude's awareness; surfaces in the first reply):
+
+- Project has artifacts → Claude opens with the right next-step suggestion (`validate-spec`, `synthesize-spec`, etc.)
+- First session in a project with no artifacts → one-time greeting (version, getting-started hint, link to the example spec). Marker file at `${CLAUDE_PLUGIN_DATA}/welcomed-{hash}` prevents repeat.
+- Subsequent sessions in irrelevant projects → silent.
+
+### Optional: enable the status line
+
+`ido4specs` ships `scripts/statusline.sh` for users who want a project-state-aware status line at the bottom of the Claude Code UI. It is **not enabled by default** because Claude Code does not yet support shipping a `statusLine` from a plugin's `settings.json` (only `subagentStatusLine` and `agent` keys are supported there, and `${CLAUDE_PLUGIN_ROOT}` does not expand in `settings.json`). To opt in, add the following to `~/.claude/settings.json` (replace the absolute path with your install location):
+
+```jsonc
+{
+  "statusLine": {
+    "type": "command",
+    "command": "/absolute/path/to/ido4specs/scripts/statusline.sh",
+    "padding": 1
+  }
+}
+```
+
+Output examples:
+
+| Project state | Status line |
+|---|---|
+| Tech spec ready | `ido4specs · spec ✓ {name}` |
+| Canvas ready, no spec | `ido4specs · synth {name}` |
+| Strategic spec only | `ido4specs · plan {name}` |
+| No artifacts | *(silent — your previous status line falls through)* |
+
+### Disable the plugin
+
+To disable `ido4specs` entirely for a specific project (or globally), add to `.claude/settings.json` (or `~/.claude/settings.json`):
+
+```jsonc
+{
+  "enabledPlugins": {
+    "ido4specs@ido4-plugins": false
+  }
+}
+```
+
 ## Bundled validators
 
 `ido4specs` ships two zero-dependency parser bundles:

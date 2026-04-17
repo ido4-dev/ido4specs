@@ -1,8 +1,9 @@
 ---
 name: create-spec
 description: >
-  Phase 1 of the technical-spec pipeline. Takes a strategic spec (typically from
-  ido4shape), parses it via the bundled @ido4/spec-format validator, detects
+  Phase 1 — strategic spec + codebase → technical canvas. Takes a strategic spec
+  (typically from ido4shape), parses it via the bundled @ido4/spec-format
+  validator, detects
   project mode (existing / greenfield-with-context / greenfield-standalone),
   spawns parallel Explore subagents for codebase or integration-target analysis,
   and synthesizes a technical canvas that becomes the input to

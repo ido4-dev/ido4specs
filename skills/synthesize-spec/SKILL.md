@@ -1,8 +1,8 @@
 ---
 name: synthesize-spec
 description: >
-  Phase 2 of the technical-spec pipeline. Takes a technical canvas (produced by
-  /ido4specs:create-spec) and produces the technical spec artifact — the input
+  Phase 2 — technical canvas → technical spec artifact. Takes a technical canvas
+  (produced by /ido4specs:create-spec) and produces the technical spec — the input
   to downstream ingestion. Pure transform: canvas in, spec out. No codebase
   exploration; the canvas is the source of truth. Auto-runs structural
   validation at the end to catch drift before returning to the user. Use when

@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+UX polish for global installs — the plugin now stays out of the way in projects that don't use it, with a clearer first-install signal in projects where it lives. Includes a course-correction on the planned status line integration after we hit Claude Code constraints (see Notes below).
+
+### Added
+- First-time-per-project greeting in `scripts/session-status.sh` — when a session opens in a project with no spec artifacts, the SessionStart hook emits a one-time intro (version, how to start, link to the bundled example spec, recall hint) and writes a marker to `${CLAUDE_PLUGIN_DATA}/welcomed-{shasum-of-cwd}` so it never repeats for that project. The greeting is framed as a directive to the model so it's actually surfaced in the first reply (not swallowed as background context).
+- `scripts/statusline.sh` — opt-in status line script for users who want a project-state-aware indicator (`ido4specs · spec ✓ {name}`, `synth {name}`, `plan {name}`, or silent). README documents the opt-in path.
+- `/ido4specs:doctor` Check 8 — status line opt-in detection. Reads `~/.claude/settings.json` and project `.claude/settings.json`, reports whether a `statusLine` is configured for ido4specs, configured for something else, or not configured. When not configured, emits a copy-paste config block with the absolute path resolved.
+
+### Changed
+- `scripts/session-status.sh` — polite by default. Previously emitted a "no artifacts found" line on every session in every project; now silent after the first session in irrelevant projects. Artifact-aware messaging (canvas / strategic / tech spec) is unchanged and continues to fire on every session.
+- `README.md` — added "Visible signals" section covering the SessionStart behavior, the opt-in status line, and the per-project / global disable path via `enabledPlugins`.
+- `SECURITY.md` — documented the new welcome-marker write to `${CLAUDE_PLUGIN_DATA}` and the opt-in status line script.
+
+### Notes
+- The status line is **not** shipped via the plugin's `settings.json` even though that was the original plan. Claude Code's plugin `settings.json` only supports the `agent` and `subagentStatusLine` keys (not `statusLine`), and `${CLAUDE_PLUGIN_ROOT}` does not expand inside `settings.json` even where the key is supported. So the script is provided and documented as opt-in via the user's own `~/.claude/settings.json` until Claude Code adds first-class plugin support for the main-thread status line.
+
 ## [0.2.0] — 2026-04-16
 
 First-time user experience, self-service diagnostics, and quality fixes from the first E2E test round (`reports/e2e-001-ido4shape-cloud.md`).

@@ -141,7 +141,7 @@ The `ido4specs` pipeline is linear: `create-spec → synthesize-spec → review-
 | Stage | Checkpoint |
 |---|---|
 | 1b | Format compliance check against the parser contract (same checks as validate-spec Pass 1, but this is the independent LLM-driven review, not the bundled validator). |
-| 1c | Quality assessment — descriptions code-grounded, success conditions verifiable, metadata calibrated, capabilities coherent (2–8 tasks each). |
+| 1c | Quality assessment — descriptions code-grounded, success conditions verifiable, metadata calibrated, capabilities coherent (1–8 tasks each, single-task capabilities fine for M-effort+). |
 | 1d | Downstream awareness section — flags `ai: human`, `risk: critical`, heavy cross-capability deps as informational, not as governance enforcement. |
 | 1e | Produces the **Spec Review Report** in the structured format from `agents/spec-reviewer.md`: Summary, Errors, Warnings, Suggestions, Downstream Notes, Dependency Graph. |
 

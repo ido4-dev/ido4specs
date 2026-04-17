@@ -85,6 +85,39 @@ ls specs/*-tech-canvas.md specs/*-tech-spec.md docs/specs/*-tech-canvas.md docs/
 
 Report what exists. No PASS/FAIL — purely informational.
 
+### 8. Status line opt-in
+
+`scripts/statusline.sh` is provided as an opt-in tool — `ido4specs` cannot ship a `statusLine` default via plugin `settings.json` (Claude Code only supports `agent` and `subagentStatusLine` keys there, and `${CLAUDE_PLUGIN_ROOT}` does not expand inside `settings.json`). Check whether the user has wired it into their own settings:
+
+```bash
+python3 -c "
+import json, os
+user_p = os.path.expanduser('~/.claude/settings.json')
+proj_p = '.claude/settings.json'
+def get(p): return (json.load(open(p)) if os.path.exists(p) else {}).get('statusLine', {}).get('command', '')
+print('USER:', get(user_p))
+print('PROJ:', get(proj_p))
+"
+```
+
+Three outcomes (purely informational, no PASS/FAIL):
+
+- The configured `statusLine.command` references the plugin's `scripts/statusline.sh` (matched against the absolute path resolved from `${CLAUDE_PLUGIN_ROOT}/scripts/statusline.sh`) → report **"configured for ido4specs"** with the scope (user / project) where it lives.
+- The configured `statusLine.command` references something else → report **"configured (user's own)"** and note that `ido4specs` would not override it even if it could.
+- Neither user nor project settings has a `statusLine` → report **"not configured (opt-in available)"** and emit the copy-paste config block:
+
+  ```jsonc
+  {
+    "statusLine": {
+      "type": "command",
+      "command": "<absolute path to scripts/statusline.sh, resolved from CLAUDE_PLUGIN_ROOT>",
+      "padding": 1
+    }
+  }
+  ```
+
+  Tell the user to add it to `~/.claude/settings.json` (global) or `.claude/settings.json` (project).
+
 ## Output format
 
 ```
@@ -97,6 +130,7 @@ ido4specs doctor — diagnostic report
 5. Checksums:           PASS (both match)
 6. Round-trip test:     PASS (example-technical-spec.md validates clean)
 7. Workspace state:     specs/notification-system-tech-spec.md (640 lines)
+8. Status line:         not configured (opt-in available — see config block above)
 
 Result: ALL CHECKS PASSED
 ```

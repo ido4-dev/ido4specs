@@ -37,9 +37,11 @@ The `SessionStart` hook runs three commands:
 
 1. Copies `dist/tech-spec-validator.js` → `${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js`
 2. Copies `dist/spec-validator.js` → `${CLAUDE_PLUGIN_DATA}/spec-validator.js`
-3. Runs `scripts/session-status.sh` — a read-only script that echoes the plugin version, scans for existing `*-tech-canvas.md` and `*-tech-spec.md` artifacts in the project, and outputs a one-line contextual status (e.g., "Pipeline: canvas from a previous session at specs/X-tech-canvas.md. Next: /ido4specs:synthesize-spec"). The output is injected into the model's context so the first response is contextual. The script reads only filenames (via `ls` globbing) — it never reads file contents, makes network requests, or modifies any files.
+3. Runs `scripts/session-status.sh` — a read-only script that scans for existing `*-tech-canvas.md`, `*-tech-spec.md`, and `*-strategic-spec.md` artifacts in the project and outputs a one-line contextual status when artifacts are present. When no artifacts are present, it emits a one-time first-install greeting (writing a marker file at `${CLAUDE_PLUGIN_DATA}/welcomed-{shasum-of-cwd}` so the greeting never repeats for that project) and stays silent on subsequent sessions. The output (when present) is injected into the model's context so the first response is contextual. The script reads only filenames (via `ls` globbing) — it never reads file contents, makes network requests, or modifies any files outside of the plugin's own `${CLAUDE_PLUGIN_DATA}` directory.
 
-No `PreToolUse`, `Stop`, `PreCompact`, or `UserPromptSubmit` hooks — `ido4specs` is a transform pipeline, not a dialogue tool, and has no runtime state to inject or check beyond the one-shot session-start scan.
+The plugin also bundles `scripts/statusline.sh` as an **opt-in** status line script (not active by default — see README "Optional: enable the status line"). When a user wires it into their own `~/.claude/settings.json`, it performs the same read-only artifact scan as `session-status.sh` and prints a single line (e.g., `ido4specs · spec ✓ {name}`), or nothing when no artifacts are present. No file contents are read, no network requests, no modifications. The plugin does not ship a `statusLine` default in its own `settings.json`.
+
+No `PreToolUse`, `Stop`, `PreCompact`, or `UserPromptSubmit` hooks — `ido4specs` is a transform pipeline, not a dialogue tool, and has no runtime state to inject or check beyond the session-start scan.
 
 ## Sub-Agents
 
