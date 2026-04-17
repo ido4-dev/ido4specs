@@ -2,19 +2,6 @@
 
 ## [0.3.0] — 2026-04-17
 
-Polite-by-default onboarding and opt-in status line
-
-### Added
-- Polite-by-default onboarding flow
-- Opt-in status line display option
-- Auto-updating README skill inventory
-- Weekly token health check diagnostics
-
-### Changed
-- Updated bundled validators to v0.8.0
-
-## [Unreleased]
-
 **Polite by default.** `ido4specs` now stays out of the way in projects that don't use it, while introducing itself clearly the first time you open a session in any new project. The plugin is invisible when irrelevant, informative when it matters.
 
 ### Added
@@ -27,6 +14,7 @@ Polite-by-default onboarding and opt-in status line
 - **SessionStart is now silent in irrelevant projects** after the first-time intro. Previously emitted "no artifacts found" on every session in every project — noisy for users with the plugin installed globally. Artifact-aware messaging in projects that DO use the plugin is unchanged.
 - **Skill descriptions tightened.** `/create-spec` and `/synthesize-spec` now lead with "Phase 1 — strategic spec + codebase → technical canvas" / "Phase 2 — technical canvas → technical spec artifact" so the slash menu conveys what each phase does at a glance.
 - **T8 capability-coherence assertion** consistently relaxed to "1–8 tasks" across all references (was already shipped in v0.2.0 for `validate-spec` and `spec-reviewer`; this release cleans up the last two stale "2–8" mentions in `review-spec` skill body and `CLAUDE.md`).
+- **Marketplace polish.** Description rewritten as a 50-word value-led elevator pitch. Refined keywords to match audience search behavior (dropped vague `specification` and misleading `spec-writing`; added `implementation-planning`, `engineering-planning`, `github-issues`). Added `author.email` for reviewer contact.
 
 ### Notes
 - Status line is provided as opt-in (not shipped as a plugin default) because Claude Code's plugin `settings.json` does not yet support shipping a `statusLine` directly — only `agent` and `subagentStatusLine` keys, with no `${CLAUDE_PLUGIN_ROOT}` expansion. When that lands upstream, `ido4specs` will ship the `statusLine` config natively.
