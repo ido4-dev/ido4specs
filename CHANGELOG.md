@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0] — 2026-04-17
+
+Polite-by-default onboarding and opt-in status line
+
+### Added
+- Polite-by-default onboarding flow
+- Opt-in status line display option
+- Auto-updating README skill inventory
+- Weekly token health check diagnostics
+
+### Changed
+- Updated bundled validators to v0.8.0
+
 ## [Unreleased]
 
 **Polite by default.** `ido4specs` now stays out of the way in projects that don't use it, while introducing itself clearly the first time you open a session in any new project. The plugin is invisible when irrelevant, informative when it matters.
