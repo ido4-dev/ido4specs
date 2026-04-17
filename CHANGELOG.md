@@ -2,20 +2,22 @@
 
 ## [Unreleased]
 
-UX polish for global installs — the plugin now stays out of the way in projects that don't use it, with a clearer first-install signal in projects where it lives. Includes a course-correction on the planned status line integration after we hit Claude Code constraints (see Notes below).
+**Polite by default.** `ido4specs` now stays out of the way in projects that don't use it, while introducing itself clearly the first time you open a session in any new project. The plugin is invisible when irrelevant, informative when it matters.
 
 ### Added
-- First-time-per-project greeting in `scripts/session-status.sh` — when a session opens in a project with no spec artifacts, the SessionStart hook emits a one-time intro (version, how to start, link to the bundled example spec, recall hint) and writes a marker to `${CLAUDE_PLUGIN_DATA}/welcomed-{shasum-of-cwd}` so it never repeats for that project. The greeting is framed as a directive to the model so it's actually surfaced in the first reply (not swallowed as background context).
-- `scripts/statusline.sh` — opt-in status line script for users who want a project-state-aware indicator (`ido4specs · spec ✓ {name}`, `synth {name}`, `plan {name}`, or silent). README documents the opt-in path.
-- `/ido4specs:doctor` Check 8 — status line opt-in detection. Reads `~/.claude/settings.json` and project `.claude/settings.json`, reports whether a `statusLine` is configured for ido4specs, configured for something else, or not configured. When not configured, emits a copy-paste config block with the absolute path resolved.
+- **First-time-per-project greeting.** First session in a new project now shows a one-line intro: what the plugin is, how to start, where the bundled example lives. Stored marker file prevents repeat — you'll only see it once per project.
+- **Opt-in status line.** `scripts/statusline.sh` shows project state at the bottom of the Claude Code UI (`ido4specs · spec ✓ {name}`, `synth {name}`, `plan {name}`, or silent). Wire it into `~/.claude/settings.json` to enable — `/ido4specs:doctor` emits the exact config block with your install path.
+- **Doctor Check 8.** `/ido4specs:doctor` now detects whether the status line opt-in is configured and surfaces the config block if not.
+- **README polish.** New "What you get" section shows an example tech spec snippet so you can see the artifact, not just read about it.
 
 ### Changed
-- `scripts/session-status.sh` — polite by default. Previously emitted a "no artifacts found" line on every session in every project; now silent after the first session in irrelevant projects. Artifact-aware messaging (canvas / strategic / tech spec) is unchanged and continues to fire on every session.
-- `README.md` — added "Visible signals" section covering the SessionStart behavior, the opt-in status line, and the per-project / global disable path via `enabledPlugins`.
-- `SECURITY.md` — documented the new welcome-marker write to `${CLAUDE_PLUGIN_DATA}` and the opt-in status line script.
+- **SessionStart is now silent in irrelevant projects** after the first-time intro. Previously emitted "no artifacts found" on every session in every project — noisy for users with the plugin installed globally. Artifact-aware messaging in projects that DO use the plugin is unchanged.
+- **Skill descriptions tightened.** `/create-spec` and `/synthesize-spec` now lead with "Phase 1 — strategic spec + codebase → technical canvas" / "Phase 2 — technical canvas → technical spec artifact" so the slash menu conveys what each phase does at a glance.
+- **T8 capability-coherence assertion** consistently relaxed to "1–8 tasks" across all references (was already shipped in v0.2.0 for `validate-spec` and `spec-reviewer`; this release cleans up the last two stale "2–8" mentions in `review-spec` skill body and `CLAUDE.md`).
 
 ### Notes
-- The status line is **not** shipped via the plugin's `settings.json` even though that was the original plan. Claude Code's plugin `settings.json` only supports the `agent` and `subagentStatusLine` keys (not `statusLine`), and `${CLAUDE_PLUGIN_ROOT}` does not expand inside `settings.json` even where the key is supported. So the script is provided and documented as opt-in via the user's own `~/.claude/settings.json` until Claude Code adds first-class plugin support for the main-thread status line.
+- Status line is provided as opt-in (not shipped as a plugin default) because Claude Code's plugin `settings.json` does not yet support shipping a `statusLine` directly — only `agent` and `subagentStatusLine` keys, with no `${CLAUDE_PLUGIN_ROOT}` expansion. When that lands upstream, `ido4specs` will ship the `statusLine` config natively.
+- CI now installs the Claude Code CLI before running `tests/validate-plugin.sh`, so Test 14 (`claude plugin validate`) actually runs in CI instead of soft-skipping when the runner doesn't have the CLI. The official validator is the source of truth for marketplace acceptance, so we want CI to catch any drift between our custom 148-check suite and the official check.
 
 ## [0.2.0] — 2026-04-16
 

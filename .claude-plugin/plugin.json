@@ -1,21 +1,22 @@
 {
   "name": "ido4specs",
-  "description": "Turn a strategic spec into a structurally-validated technical spec on disk. Companion plugin for engineers planning implementation work from an ido4shape strategic spec. Reads the strategic spec, explores your codebase via parallel Explore subagents, produces a technical canvas (name-tech-canvas.md), then synthesizes a methodology-neutral technical spec (name-tech-spec.md) with capability decomposition, task metadata (effort/risk/type/ai), and a dependency graph. Any downstream tool — or ido4dev:ingest-spec — can turn the file into GitHub issues.",
+  "description": "The bridge between a strategic spec and GitHub issues. Analyzes your codebase, decomposes capabilities into implementation tasks with effort, risk, and dependency metadata, and produces a methodology-neutral technical spec any planning tool can consume. For tech leads and staff engineers who want to skip the manual decomposition tax.",
   "version": "0.2.0",
-  "category": "productivity",
   "author": {
     "name": "Bogdan Coman",
+    "email": "coman2904@gmail.com",
     "url": "https://github.com/ido4-dev"
   },
   "homepage": "https://github.com/ido4-dev/ido4specs",
   "repository": "https://github.com/ido4-dev/ido4specs",
   "license": "MIT",
   "keywords": [
-    "specification",
-    "spec-writing",
     "technical-spec",
     "task-decomposition",
+    "implementation-planning",
+    "engineering-planning",
     "code-analysis",
+    "github-issues",
     "claude-code",
     "ido4"
   ]

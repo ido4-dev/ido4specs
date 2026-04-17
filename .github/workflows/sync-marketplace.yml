@@ -72,8 +72,12 @@ jobs:
               if p['name'] == 'ido4specs':
                   p['version'] = plugin['version']
                   p['description'] = plugin.get('description', p.get('description', ''))
-                  if 'category' in plugin:
-                      p['category'] = plugin['category']
+                  # Fields that exist in both plugin.json and marketplace entry schemas.
+                  # NOT synced: 'category' and 'tags' are marketplace-specific (not in
+                  # plugin.json schema), so they stay authored in marketplace.json.
+                  for field in ('homepage', 'repository', 'license', 'keywords', 'author'):
+                      if field in plugin:
+                          p[field] = plugin[field]
           json.dump(d, open(market_path, 'w'), indent=2)
           "
           echo "Updated marketplace.json to v${{ steps.version.outputs.version }}"

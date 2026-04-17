@@ -58,7 +58,7 @@ else
   fail "repository URL '$REPO_URL' should point to ido4-dev/ido4specs"
 fi
 
-for field in category homepage keywords; do
+for field in homepage keywords; do
   if python3 -c "import json; d=json.load(open('$PLUGIN_JSON')); assert '$field' in d" 2>/dev/null; then
     pass "plugin.json has '$field' field"
   else

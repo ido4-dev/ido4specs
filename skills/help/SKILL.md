@@ -11,7 +11,7 @@ user-invocable: false
 
 ## What ido4specs does
 
-ido4specs turns a strategic spec (from ido4shape or hand-written) into a structurally-validated technical spec on disk. It's the bridge between "what to build" and "GitHub issues" — analyzing your codebase, decomposing capabilities into implementation tasks, and producing a methodology-neutral `.md` file that any downstream tool can consume.
+**The bridge between "what to build" and "GitHub issues."** `ido4specs` takes a strategic spec — yours or one produced by `ido4shape` — analyzes your codebase, and decomposes capabilities into implementation tasks with effort, risk, type, and dependency metadata. The result is a methodology-neutral `.md` file that any downstream tool (or `/ido4dev:ingest-spec`) can turn into GitHub issues. Built for tech leads and staff engineers who want to skip the manual decomposition tax.
 
 ## The pipeline
 

@@ -12,5 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Install Claude Code CLI
+        # Required so tests/validate-plugin.sh Test 14 (claude plugin validate)
+        # actually runs in CI instead of soft-skipping. The validator is offline
+        # (no API calls, no auth needed) — it only checks local file structure.
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash -s stable
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Claude CLI is available
+        run: claude --version
+
       - name: Validate plugin structure
         run: bash tests/validate-plugin.sh
