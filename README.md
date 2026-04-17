@@ -186,6 +186,7 @@ This **parser-as-seam** pattern is what lets the technical spec be methodology-n
 - [`references/example-technical-spec.md`](references/example-technical-spec.md) — minimal parseable technical-spec example
 - [`references/technical-spec-format.md`](references/technical-spec-format.md) — canonical format reference
 - [`SECURITY.md`](SECURITY.md) — what the plugin reads, what it writes, where data lives, hook surface
+- [`PRIVACY.md`](PRIVACY.md) — privacy policy: no telemetry, no analytics, no network calls, no data collection
 
 **For contributors:**
 
