@@ -242,6 +242,7 @@ SKILL_DIRS=(
   "skills/review-spec"
   "skills/validate-spec"
   "skills/refine-spec"
+  "skills/spec-quality"
   "skills/doctor"
   "skills/help"
 )
