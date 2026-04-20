@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0] — 2026-04-20
+
+add spec-quality skill migrated from ido4dev (methodology-neutral adaptation)
+
+### Added
+- `spec-quality` skill for assessing technical spec quality against methodology-neutral standards.
+- PRIVACY.md documenting no-collection practices.
+
+### Changed
+- Updated bundled validators (spec-format and tech-spec-format) to v0.8.0.
+
+### Fixed
+- Improved marketplace onboarding and plugin diagnostics.
+
 ## [0.3.0] — 2026-04-17
 
 **Polite by default.** `ido4specs` now stays out of the way in projects that don't use it, while introducing itself clearly the first time you open a session in any new project. The plugin is invisible when irrelevant, informative when it matters.
