@@ -120,6 +120,7 @@ These activate automatically during conversation when relevant — you don't inv
 | Skill | Description |
 |-------|-------------|
 | `help` | Explains what ido4specs does, what skills are available, how the pipeline works, and how to get started. |
+| `spec-quality` | Specification quality standards for technical specs. |
 <!-- END SKILL INVENTORY -->
 
 ## Visible signals
