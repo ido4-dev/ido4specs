@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.1] — 2026-04-28
+
+Fix OBS-01/04/08/09 from e2e-003 — review-spec mechanism, validator JSON usage, agent path anchors, validate-spec cross-refs
+
+### Fixed
+- Fixed review-spec output mechanism and validator integration (OBS-01).
+- Resolved validator JSON parsing in skill invocations (OBS-04).
+- Corrected agent path references in skill templates (OBS-08).
+- Improved validate-spec cross-reference tracking (OBS-09).
+
+### Changed
+- Updated spec-validator and tech-spec-validator bundles to v0.9.0.
+
 ## [0.4.0] — 2026-04-20
 
 add spec-quality skill migrated from ido4dev (methodology-neutral adaptation)
