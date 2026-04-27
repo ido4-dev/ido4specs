@@ -2,16 +2,20 @@
 
 ## [0.4.1] — 2026-04-28
 
-Fix OBS-01/04/08/09 from e2e-003 — review-spec mechanism, validator JSON usage, agent path anchors, validate-spec cross-refs
+**Friction patch from round-3 E2E.** Four observations from `reports/e2e-003-PS-metabase-connector.md` addressed: zero permission prompts in `review-spec`, no more filesystem searches for agent files, faster Stage 0 in `create-spec`, and `validate-spec` finally surfaces in the in-product navigation. No correctness bugs were fixed — these are user-experience and skill-discoverability issues.
 
 ### Fixed
-- Fixed review-spec output mechanism and validator integration (OBS-01).
-- Resolved validator JSON parsing in skill invocations (OBS-04).
-- Corrected agent path references in skill templates (OBS-08).
-- Improved validate-spec cross-reference tracking (OBS-09).
+- **`review-spec` mechanism redesign (OBS-08).** Skill body now explicitly forbids shell-pipeline metadata extraction (`grep | sort | uniq -c`, `awk` for counting, etc.) — these triggered 4 permission prompts per run because Bash isn't in `review-spec`'s allowed-tools. Effort/risk/type/`ai` distributions, hub tasks, root tasks, success-condition counts, and description char counts are now derived from the in-context spec content directly. Substantive review depth (evidence-backed warnings, sibling-pattern checks, dependency-graph reasoning) preserved — only the mechanism changed.
+- **Agent file path anchors (OBS-04).** Eight references to `agents/*.md` across `create-spec`, `synthesize-spec`, and `review-spec` SKILL.md bodies now use the `${CLAUDE_SKILL_DIR}/` prefix. Bare relative paths previously triggered `$HOME`-wide filesystem searches when Claude tried to resolve them.
+- **Validator JSON usage in `create-spec` Stage 0 and `refine-spec` revalidation (OBS-01).** Stage 0 of `create-spec` now spells out the `spec-validator.js` JSON shape (`project.name`, `groups[].capabilityCount`, `metrics.dependencyEdgeCount`, `metrics.maxDependencyDepth`, `metrics.crossCuttingConcernCount`) so the field-extraction-via-`python3 -c` loop disappears — previously this added ~3 minutes to every Stage 0 run via 5 redundant validator invocations. Same anti-pattern explicitly forbidden in `refine-spec`'s baseline + post-edit revalidation.
+- **`validate-spec` cross-reference surfacing (OBS-09).** End-message templates in `synthesize-spec`, `review-spec` (verdict prompts), and `refine-spec` now mention `/ido4specs:validate-spec` alongside `/ido4specs:review-spec`. The deterministic content-assertion layer (T0–T8) is no longer orphaned in the in-product navigation graph — a user following only the in-skill suggestions will encounter it.
+
+### Added
+- **TEST 15 in `tests/validate-plugin.sh` (12 hygiene checks).** Guards all four observations against regression: skill-body refs to `agents/*.md` must use `${CLAUDE_SKILL_DIR}/` prefix; predecessor skills' end-messages must mention `/ido4specs:validate-spec`; `review-spec` must explicitly forbid shell-pipeline metadata extraction and instruct deriving from in-context spec content; no skill body may pipe validator output through `python3 -c`. Total suite: 166 PASS / 0 FAIL / 0 WARN.
+- **Round-3 E2E report.** `reports/e2e-003-PS-metabase-connector.md` documents the 5-skill pipeline run on a 43-cap / 59-task strategic spec, all observations + positives, and a "Design questions for v0.5+" section capturing structural conversations that don't fit the per-OBS frame (user-profiling at pipeline entry, two-layer validation framing, pipeline orchestrator pattern, `create-spec`'s internal phasing, cross-sell footer audit).
 
 ### Changed
-- Updated spec-validator and tech-spec-validator bundles to v0.9.0.
+- **Bundled validators updated to v0.9.0** (`spec-validator.js` and `tech-spec-validator.js`). Auto-merged via the cross-repo sync pipeline; rebased into the release commit.
 
 ## [0.4.0] — 2026-04-20
 
