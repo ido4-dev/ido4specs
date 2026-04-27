@@ -28,7 +28,7 @@ Read the target file. Check the format marker line — if it says `strategic-spe
 
 > This file is a strategic spec (`format: strategic-spec`), not a technical spec. Strategic-spec refinement lives in `/ido4shape:refine-spec`. If you want to refine the *technical* spec derived from this strategic spec, pass the corresponding `-tech-spec.md` file instead.
 
-Run the bundled validator to capture the baseline:
+Run the bundled validator to capture the baseline. Read its JSON output directly — do not pipe through `python3 -c` to extract fields.
 
 ```bash
 node "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js" <path>
@@ -67,11 +67,11 @@ If the ripple feels larger than the user expected, pause and confirm scope befor
 
 ## After each refinement
 
-1. Run the bundled validator:
+1. Run the bundled validator and read its JSON output directly. Do not pipe through `python3 -c` to extract fields — the JSON is structured and you have it in conversation context after the call.
    ```bash
    node "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js" <path>
    ```
-   If it errors where it didn't before, the edit introduced a structural regression. Roll back and try again, or show the user what broke before proceeding.
+   The fields you typically need: `valid`, `errors[]`, `warnings[]`, `metrics.dependencyEdgeCount`, `metrics.maxDependencyDepth` (for ripple-effect reporting). If the validator errors where it didn't before, the edit introduced a structural regression. Roll back and try again, or show the user what broke before proceeding.
 
 2. Verify manually what the parser might miss:
    - All task refs unique
@@ -101,10 +101,10 @@ When fixing a class of format issues (e.g., all task refs missing zero-padding),
 Probe for `.ido4/project-info.json` in the workspace:
 
 - **If the marker file exists**:
-  > Changes applied. Validation clean. `/ido4dev:ingest-spec <spec-path>` is ready when you want to create GitHub issues. Consider running `/ido4specs:review-spec <spec-path>` first if the changes were substantive.
+  > Changes applied. Validation clean. `/ido4dev:ingest-spec <spec-path>` is ready when you want to create GitHub issues. If the changes were substantive, consider running `/ido4specs:review-spec <spec-path>` for qualitative review and/or `/ido4specs:validate-spec <spec-path>` for the deterministic content-assertion pass (T0–T8).
 
 - **If the marker file doesn't exist**:
-  > Changes applied. Validation clean. Consider running `/ido4specs:review-spec <spec-path>` for qualitative review if the changes were substantive. To turn this spec into GitHub issues: install `ido4dev`, run `/ido4dev:onboard`, then `/ido4dev:ingest-spec <spec-path>`.
+  > Changes applied. Validation clean. If the changes were substantive, consider running `/ido4specs:review-spec <spec-path>` for qualitative review and/or `/ido4specs:validate-spec <spec-path>` for the deterministic content-assertion pass (T0–T8). To turn this spec into GitHub issues: install `ido4dev`, run `/ido4dev:onboard`, then `/ido4dev:ingest-spec <spec-path>`.
 
 The probe is read-only.
 

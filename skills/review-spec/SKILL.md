@@ -13,7 +13,7 @@ allowed-tools: Read, Glob, Grep
 user-invocable: true
 ---
 
-You review a technical spec artifact for format compliance and content quality, inline, following the review protocol in `agents/spec-reviewer.md`. This is Layer 2 of the two-layer validation pattern — qualitative LLM judgment on top of the deterministic parser check that `/ido4specs:validate-spec` provides.
+You review a technical spec artifact for format compliance and content quality, inline, following the review protocol in `${CLAUDE_SKILL_DIR}/agents/spec-reviewer.md`. This is Layer 2 of the two-layer validation pattern — qualitative LLM judgment on top of the deterministic parser check that `/ido4specs:validate-spec` provides.
 
 ## Pipeline context
 
@@ -48,7 +48,7 @@ Otherwise, verify the technical spec file exists at `$ARGUMENTS`. If not, report
 
 ## Stage 1: Inline review via spec-reviewer
 
-`agents/spec-reviewer.md` is a **review protocol and rules reference**, not a subagent to spawn. Read it now to internalize:
+`${CLAUDE_SKILL_DIR}/agents/spec-reviewer.md` is a **review protocol and rules reference**, not a subagent to spawn. Read it now to internalize:
 
 1. The two-stage review protocol (format compliance first, then content quality)
 2. Format compliance checks (project header with `> format: tech-spec | version: 1.0`, capability headings with size/risk metadata, task headings with ref pattern `[A-Z]{2,5}-\d{2,3}[A-Z]?`, metadata keys and values, `depends_on` references, no circular dependencies)
@@ -59,13 +59,23 @@ Otherwise, verify the technical spec file exists at `$ARGUMENTS`. If not, report
 
 You (main Claude) perform the review directly on Sonnet's equivalent — the agent's `model: sonnet` frontmatter sets the expectation, and the skill's `allowed-tools` (Read, Glob, Grep, no Bash) reflects that no bundled-validator call happens here. Structural validation is `validate-spec`'s job; this skill handles content quality.
 
+### Mechanism — derive everything from the in-context spec content
+
+After Stage 1a's `Read` call, the entire spec text is in your conversation context. Every measurement you need for the review — effort/risk/type/ai distributions, success-condition counts, depends_on enumerations, root tasks (`> depends_on: -`), hub tasks (most-depended-upon), description char counts, capability-to-task ratios, `ai: human` and `risk: critical` lists — is derivable by reading that text directly.
+
+**Do not run shell pipelines for metadata extraction.** `grep | sort | uniq -c` for distributions, `awk` for description char counts, `for` loops over task refs — these reimplement structural extraction the parser already provides better, fail in fragile ways when the spec layout shifts, and trigger permission prompts because Bash is not in this skill's allowed-tools. The user should not be prompted for approval just to count effort distribution.
+
+**If you need structural verification beyond visual inspection**, use the **Grep tool** (the Claude Code structured search, not Bash `grep`). It returns matches with line numbers and is allowlisted. For sibling-pattern comparisons (e.g., "does DCT-01A's `depends_on` look right vs other DCT-* tasks?"), reading the relevant section via the **Read tool** with line offsets is faster and more precise than a shell pipeline.
+
+The depth of substantive review (evidence-backed warnings, hub-task identification, sibling-pattern checks for missing deps) is what matters and does not depend on shell mechanism. The same findings come from in-context inspection.
+
 ### Stage 1a: Read the technical spec
 
 Read the technical spec file at `$ARGUMENTS`. Optional: glob the surrounding `specs/` directory for a sibling `*-tech-canvas.md` — if one exists, it's useful grounding for checking stakeholder-attribution preservation (T6 in validate-spec's Pass 2 vocabulary). Do not require the canvas — some specs may be reviewed standalone.
 
 ### Stage 1b: Format compliance review
 
-Systematically check every structural element against the parser's exact expectations (from `agents/spec-reviewer.md` Stage 1):
+Systematically check every structural element against the parser's exact expectations (from `${CLAUDE_SKILL_DIR}/agents/spec-reviewer.md` Stage 1):
 
 - Project header: exactly one `#` heading, followed by a `> format: tech-spec | version: 1.0` marker and a `>` description line
 - Capability headings: `## Capability: Name` format, followed by `>` metadata line with `size` and `risk`
@@ -76,11 +86,11 @@ Systematically check every structural element against the parser's exact expecta
 - All `depends_on` references point to existing task IDs in the document
 - No circular dependency chains (trace the full graph)
 
-Use `Grep` to verify counts and catch regex violations quickly. Use `Read` with line offsets to spot-check specific sections. Note that the bundled parser catches these same checks deterministically in `/ido4specs:validate-spec` — this stage is for sanity-checking the spec independently and surfacing findings in the same report as the content assessment.
+Use the **Grep tool** (Claude Code's structured search, not Bash) to spot regex violations or count pattern occurrences. Use `Read` with line offsets to spot-check specific sections. The bundled parser catches these same checks deterministically in `/ido4specs:validate-spec`; this stage is for sanity-checking the spec independently and surfacing findings in the same report as the content assessment. Do not use shell pipelines (`grep | sort | uniq -c`, `awk`, etc.) for this — derive any counts you need from the in-context spec content directly.
 
 ### Stage 1c: Quality assessment
 
-From `agents/spec-reviewer.md` Stage 2. For each task:
+From `${CLAUDE_SKILL_DIR}/agents/spec-reviewer.md` Stage 2. For each task:
 
 - Description ≥ 200 characters with substantive content (not just title restatement)
 - Descriptions reference specific code paths, services, or patterns (technical specs should be codebase-grounded)
@@ -104,7 +114,7 @@ Flag values with downstream ingestion impact as informational — not as governa
 
 Classify each issue found as **Error** (will cause ingestion to fail), **Warning** (won't fail but indicates a quality problem), or **Suggestion** (not wrong but could be better). Before reporting any issue, independently verify it — false positives erode trust.
 
-Present the review report to the user in the format from `agents/spec-reviewer.md`:
+Present the review report to the user in the format from `${CLAUDE_SKILL_DIR}/agents/spec-reviewer.md`:
 
 ```markdown
 # Spec Review Report
@@ -137,8 +147,8 @@ Present the review report to the user in the format from `agents/spec-reviewer.m
 ### Handle the verdict
 
 - **FAIL**: Report the errors clearly. Tell the user: *"The spec has errors that will block ingestion. Run `/ido4specs:refine-spec <spec-path>` to fix them, then re-run `/ido4specs:review-spec`."* Stop.
-- **PASS WITH WARNINGS**: Present the warnings. Ask the user: *"Run `/ido4specs:refine-spec <spec-path>` to address these, or proceed with the caveats?"* Stop and wait for the user's explicit choice.
-- **PASS**: Proceed to the cross-sell footer.
+- **PASS WITH WARNINGS**: Present the warnings. Ask the user: *"Run `/ido4specs:refine-spec <spec-path>` to address these, run `/ido4specs:validate-spec <spec-path>` for the deterministic content-assertion pass (T0–T8) if you haven't yet, or proceed with the caveats?"* Stop and wait for the user's explicit choice.
+- **PASS**: Proceed to the cross-sell footer. (If the user hasn't yet run `/ido4specs:validate-spec`, mention it as an optional Layer-1 deterministic content-assertion pass before the cross-sell.)
 
 ---
 

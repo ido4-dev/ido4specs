@@ -14,7 +14,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash
 user-invocable: true
 ---
 
-You are Phase 2 of the technical-spec pipeline. You take a technical canvas (produced by `/ido4specs:create-spec`) and produce a **technical spec** — a markdown artifact in the shape that `@ido4/tech-spec-format`'s parser consumes. Phase 2 is a pure transform: canvas in, technical spec out. You do the work inline, following the template and rules in `agents/technical-spec-writer.md`.
+You are Phase 2 of the technical-spec pipeline. You take a technical canvas (produced by `/ido4specs:create-spec`) and produce a **technical spec** — a markdown artifact in the shape that `@ido4/tech-spec-format`'s parser consumes. Phase 2 is a pure transform: canvas in, technical spec out. You do the work inline, following the template and rules in `${CLAUDE_SKILL_DIR}/agents/technical-spec-writer.md`.
 
 ## Pipeline context
 
@@ -56,7 +56,7 @@ Otherwise:
 
 ## Stage 1: Write the technical spec (inline)
 
-`agents/technical-spec-writer.md` is a **template and rules reference**, not a subagent to spawn. Read it now to internalize:
+`${CLAUDE_SKILL_DIR}/agents/technical-spec-writer.md` is a **template and rules reference**, not a subagent to spawn. Read it now to internalize:
 
 1. The technical spec output format — the exact shape `@ido4/tech-spec-format`'s parser consumes (project header with `> format: tech-spec | version: 1.0`, capability headings with size/risk metadata, task headings with the ref pattern `[A-Z]{2,5}-\d{2,3}[A-Z]?` and effort/risk/type/ai/depends_on metadata)
 2. The Goldilocks principle for task sizing (not too small, not too big, one coherent concept per task)
@@ -81,7 +81,7 @@ If any are missing, stop and report: *"Canvas is incomplete — [specific missin
 
 **Duration advisory:** For canvases with 10+ capabilities, spec synthesis typically takes 10–20 minutes. For smaller canvases, 3–10 minutes. Tell the user the expected duration before starting.
 
-Following the template and rules in `agents/technical-spec-writer.md`:
+Following the template and rules in `${CLAUDE_SKILL_DIR}/agents/technical-spec-writer.md`:
 
 1. **Identify shared infrastructure** across capabilities — types, interfaces, services, database changes that multiple capabilities need. Create infrastructure tasks in the most-relevant capability (earliest in the dependency chain). If the canvas reveals shared infrastructure that doesn't map to any strategic capability, create a technical-only capability with a `PLAT-`, `INFRA-`, or `TECH-` prefix, placed BEFORE strategic capabilities.
 
@@ -158,7 +158,7 @@ Report:
 >
 > Structural validation: **PASS** (`@ido4/tech-spec-format@{version}`).
 >
-> Review it, then run `/ido4specs:review-spec {artifact-dir}/{spec-name}-tech-spec.md` for qualitative review, or `/ido4specs:refine-spec {artifact-dir}/{spec-name}-tech-spec.md` to edit.
+> Review it, then run `/ido4specs:review-spec {artifact-dir}/{spec-name}-tech-spec.md` for qualitative review, `/ido4specs:validate-spec {artifact-dir}/{spec-name}-tech-spec.md` for the deterministic content-assertion pass (T0–T8), or `/ido4specs:refine-spec {artifact-dir}/{spec-name}-tech-spec.md` to edit.
 
 Then append the **cross-sell footer** (below).
 

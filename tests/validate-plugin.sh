@@ -668,6 +668,74 @@ fi
 
 echo ""
 
+# ─── TEST 15: Skill-author hygiene (e2e-003 regressions) ──
+
+echo "--- Test 15: Skill-author hygiene ---"
+
+# OBS-04: skill bodies referencing agents/*.md must use ${CLAUDE_SKILL_DIR}/ prefix
+# Otherwise Claude triggers $HOME-wide filesystem searches to locate the agent file.
+for skill in create-spec synthesize-spec review-spec; do
+  skill_md="$PLUGIN_DIR/skills/$skill/SKILL.md"
+  if [ -f "$skill_md" ]; then
+    # Match any 'agents/<name>.md' that is NOT preceded by ${CLAUDE_SKILL_DIR}/
+    bare=$(grep -nE '(^|[^/])agents/[a-z][a-z0-9-]+\.md' "$skill_md" \
+      | grep -v '\${CLAUDE_SKILL_DIR}/agents/' \
+      | grep -v '^[[:space:]]*#' || true)
+    if [ -z "$bare" ]; then
+      pass "$skill SKILL.md uses \${CLAUDE_SKILL_DIR}/ for agent file refs"
+    else
+      fail "$skill SKILL.md has bare agents/*.md ref(s) — needs \${CLAUDE_SKILL_DIR}/ prefix:"
+      echo "$bare" | sed 's/^/      /'
+    fi
+  fi
+done
+
+# OBS-09: end-message templates in synthesize-spec, review-spec, refine-spec
+# must mention validate-spec so it's not orphaned in the skill cross-reference graph.
+for skill in synthesize-spec review-spec refine-spec; do
+  skill_md="$PLUGIN_DIR/skills/$skill/SKILL.md"
+  if [ -f "$skill_md" ]; then
+    if grep -q '/ido4specs:validate-spec' "$skill_md"; then
+      pass "$skill SKILL.md surfaces /ido4specs:validate-spec"
+    else
+      fail "$skill SKILL.md does not mention /ido4specs:validate-spec — Layer 1 (T0–T8) is orphaned in cross-references"
+    fi
+  fi
+done
+
+# OBS-08: review-spec must explicitly forbid shell-pipeline metadata extraction.
+# Permission-prompt friction came from grep|sort|uniq and awk patterns in Bash.
+review_md="$PLUGIN_DIR/skills/review-spec/SKILL.md"
+if [ -f "$review_md" ]; then
+  if grep -qE 'Do not run shell pipelines|Do not use shell pipelines|do not run shell pipelines' "$review_md"; then
+    pass "review-spec SKILL.md forbids shell-pipeline metadata extraction"
+  else
+    fail "review-spec SKILL.md does not forbid shell-pipeline metadata extraction (OBS-08 regression risk)"
+  fi
+  if grep -qE 'in-context spec content|in.context.+spec.+content' "$review_md"; then
+    pass "review-spec SKILL.md instructs deriving from in-context spec content"
+  else
+    fail "review-spec SKILL.md does not instruct deriving metadata from in-context spec content"
+  fi
+fi
+
+# OBS-01: skill bodies that call the bundled validators must not pipe through python3.
+# Validator output is structured JSON; piping through python3 -c is the anti-pattern.
+for skill in create-spec synthesize-spec validate-spec refine-spec; do
+  skill_md="$PLUGIN_DIR/skills/$skill/SKILL.md"
+  if [ -f "$skill_md" ]; then
+    pipe_pattern=$(grep -nE 'spec-validator\.js.*\|[[:space:]]*python3|tech-spec-validator\.js.*\|[[:space:]]*python3' "$skill_md" || true)
+    if [ -z "$pipe_pattern" ]; then
+      pass "$skill SKILL.md does not pipe validator output through python3"
+    else
+      fail "$skill SKILL.md pipes validator output through python3 (OBS-01 anti-pattern):"
+      echo "$pipe_pattern" | sed 's/^/      /'
+    fi
+  fi
+done
+
+echo ""
+
 # ─── SUMMARY ────────────────────────────────────────────
 
 echo "========================================="

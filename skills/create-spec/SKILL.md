@@ -57,24 +57,30 @@ Otherwise:
 
 1. Verify the strategic spec file exists at `$ARGUMENTS` using the `Read` tool. If the file doesn't exist, report the missing path and stop.
 
-2. Run the bundled strategic-spec validator:
+2. Run the bundled strategic-spec validator **once** and parse its JSON output directly. The validator's stdout is structured JSON — read the fields you need from that single output, in conversation context. Do not pipe the validator output through `python3 -c` or run multiple validator invocations to extract different fields.
 
    ```bash
    node "${CLAUDE_PLUGIN_DATA}/spec-validator.js" "$ARGUMENTS"
    ```
 
-   The validator outputs structured JSON to stdout — the same parser output shape that any downstream spec-format consumer receives. Parse the JSON output.
+   The output JSON top-level shape is `{ valid, meta, metrics, project, crossCuttingConcerns, groups, orphanCapabilities, dependencyGraph, errors, warnings }`. The fields you need for Stage 0:
+   - `valid`, `errors`, `warnings` — gating
+   - `project.name` — project name for the summary
+   - `groups[]` — each group has `name`, `prefix`, `priority`, `capabilityCount`, and `capabilities[]`
+   - `metrics.dependencyEdgeCount`, `metrics.maxDependencyDepth` — dependency structure
+   - `metrics.crossCuttingConcernCount` (or `crossCuttingConcerns[]` for the names)
+   - `dependencyGraph` — map of `cap.id → [dep ids]`; iterate and compare against `groups[].capabilities[].id` to count cross-group edges if useful
 
 3. Review the parse result:
-   - If there are errors, stop and report them. The strategic spec must be fixed before `create-spec` can proceed.
-   - If there are warnings, report them but continue.
+   - If `errors.length > 0`, stop and report them. The strategic spec must be fixed before `create-spec` can proceed.
+   - If `warnings.length > 0`, report them but continue.
 
-4. Present the Stage 0 summary to the user with:
-   - Project name
-   - Capabilities grouped by ido4shape groups (with count per group)
-   - Group priorities (must-have / should-have / nice-to-have)
-   - Dependency structure summary (number of edges, any cross-group dependencies)
-   - Cross-cutting concerns (count)
+4. Present the Stage 0 summary to the user:
+   - Project name (`project.name`)
+   - Capabilities grouped by ido4shape groups (count per group from `groups[i].capabilityCount`)
+   - Group priorities (`groups[i].priority`)
+   - Dependency structure (`metrics.dependencyEdgeCount` total, `metrics.maxDependencyDepth`, plus cross-group count derived from `dependencyGraph` if surfacing it)
+   - Cross-cutting concerns (`metrics.crossCuttingConcernCount`)
 
 5. Derive the `{spec-name}` from the input path for use in downstream artifact filenames. Strip `.md`, then strip the first matching trailing suffix from the priority list:
    - `-strategic-spec` (canonical recommended name)
@@ -148,7 +154,7 @@ Add a short explanation of the project mode choice:
 
 ## Stage 1: Analyze and synthesize the canvas
 
-`agents/code-analyzer.md` is a **canvas template and rules reference** — read it for the canvas structure, per-capability template, context-preservation rules, and mode-specific guidance. Do not spawn it as a subagent; you are the orchestrator AND synthesizer for Stage 1. This matters: inline synthesis with full conversation context produces stronger results than forked subagent contexts, and it avoids a Claude Code constraint where plugin-defined subagents hang at ~25–30 tool uses.
+`${CLAUDE_SKILL_DIR}/agents/code-analyzer.md` is a **canvas template and rules reference** — read it for the canvas structure, per-capability template, context-preservation rules, and mode-specific guidance. Do not spawn it as a subagent; you are the orchestrator AND synthesizer for Stage 1. This matters: inline synthesis with full conversation context produces stronger results than forked subagent contexts, and it avoids a Claude Code constraint where plugin-defined subagents hang at ~25–30 tool uses.
 
 ### Stage 1a: Gather integration target summaries (parallel)
 
@@ -177,7 +183,7 @@ Use the `Read` tool to load the strategic spec text directly. You need the raw t
 
 **Duration advisory:** For specs with 10+ capabilities, canvas synthesis typically takes 10–25 minutes. For smaller specs (under 10 capabilities), 3–10 minutes. The progress indicator shows active token generation — as long as the token count is increasing, synthesis is proceeding normally. Tell the user the expected duration before starting, so they don't mistake active synthesis for a stall.
 
-Compose the complete technical canvas following the template in `agents/code-analyzer.md`:
+Compose the complete technical canvas following the template in `${CLAUDE_SKILL_DIR}/agents/code-analyzer.md`:
 
 - Use the Explore subagents' summaries for **Ecosystem Architecture** / **Codebase Overview** and for **Integration Target Analysis** / **Codebase Analysis** per capability
 - Use the strategic spec text (from Stage 1b) for verbatim context preservation — do not summarize or rephrase capability descriptions, success conditions, stakeholder attributions, or group descriptions
