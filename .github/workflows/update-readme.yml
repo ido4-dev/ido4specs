@@ -33,4 +33,21 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
           git commit -m "Update skill inventory in README [automated]"
-          git push
+          # Retry with rebase to handle the case where another commit lands on
+          # main between this job's checkout and push (e.g., a sibling automation
+          # workflow racing this one).
+          attempt=1
+          until git push; do
+            if [ "$attempt" -ge 5 ]; then
+              echo "::error::Push failed after 5 attempts"
+              exit 1
+            fi
+            echo "Push rejected (attempt $attempt/5) — fetching and rebasing"
+            sleep $((attempt * 2))
+            if ! git pull --rebase; then
+              echo "::error::Rebase conflict — concurrent edits touched README.md"
+              git rebase --abort 2>/dev/null || true
+              exit 1
+            fi
+            attempt=$((attempt + 1))
+          done

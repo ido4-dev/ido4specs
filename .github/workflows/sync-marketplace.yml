@@ -93,7 +93,24 @@ jobs:
             exit 0
           fi
           git commit -m "sync ido4specs v${{ steps.version.outputs.version }}"
-          git push
+          # Retry with rebase to handle concurrent pushes from sibling sync
+          # workflows. Multiple plugin repos sync to the same ido4-plugins/main;
+          # without retry, whichever job pushes second loses the race.
+          attempt=1
+          until git push; do
+            if [ "$attempt" -ge 5 ]; then
+              echo "::error::Push failed after 5 attempts"
+              exit 1
+            fi
+            echo "Push rejected (attempt $attempt/5) — fetching and rebasing"
+            sleep $((attempt * 2))
+            if ! git pull --rebase; then
+              echo "::error::Rebase conflict — concurrent edits touched overlapping content"
+              git rebase --abort 2>/dev/null || true
+              exit 1
+            fi
+            attempt=$((attempt + 1))
+          done
 
       - name: Create GitHub Release
         working-directory: source

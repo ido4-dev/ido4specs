@@ -110,8 +110,26 @@ jobs:
           labels: ${{ steps.merge.outputs.label }}
           delete-branch: true
 
-      - name: Enable auto-merge
+      - name: Enable auto-merge (fall back to immediate merge if CI completed first)
         if: steps.check.outputs.needed == 'true' && steps.merge.outputs.auto == 'true' && steps.pr.outputs.pull-request-number
-        run: gh pr merge ${{ steps.pr.outputs.pull-request-number }} --auto --squash
+        run: |
+          # `gh pr merge --auto` requires pending status checks. When CI finishes
+          # before this step runs, GitHub returns "Pull request is in clean status"
+          # and exits non-zero. That race is not a failure — the PR is already
+          # mergeable, so fall back to an immediate squash merge in that case.
+          PR=${{ steps.pr.outputs.pull-request-number }}
+          set +e
+          output=$(gh pr merge "$PR" --auto --squash 2>&1)
+          rc=$?
+          set -e
+          echo "$output"
+          if [ "$rc" -ne 0 ]; then
+            if echo "$output" | grep -qF 'is in clean status'; then
+              echo "PR already mergeable — merging immediately"
+              gh pr merge "$PR" --squash --delete-branch
+            else
+              exit "$rc"
+            fi
+          fi
         env:
           GH_TOKEN: ${{ secrets.PAT }}
