@@ -2,18 +2,20 @@
 
 ## [0.4.2] — 2026-04-28
 
-Reframe OBS-01 + chunked-write as principles per prompt-strategy.md alignment
+**Authoring discipline patch.** Round-4 E2E (`reports/e2e-004-PS-metabase-connector.md`) showed v0.4.1's OBS-01 fix held in `refine-spec` (where prose was backed by clean tooling fit) but regressed in `create-spec` Stage 0 (5 redundant validator invocations) and `synthesize-spec` Stage 1d (2 calls). Audit against [`ido4-suite/docs/prompt-strategy.md`](https://github.com/ido4-dev/ido4-suite/blob/main/docs/prompt-strategy.md) surfaced the cause: the v0.4.1 wording was a rule-shaped prohibition (`Run **once**`, `Do not pipe… under any circumstances`), but the failure has no enforcement layer (no parser, hook, or schema catches violations). Per the doc's decision test, qualitative instructions without enforcement should be principles, not rules. This patch reframes the affected SKILL.md sections as principles paired with concrete BAD/GOOD examples grounded in observed round-4 behavior.
 
 ### Changed
 
-- Aligned skill guidance with ido4 suite prompt strategy: architectural invariants and template synthesis now documented as core design principles.
-- Bundled validators updated to v0.9.1: `@ido4/spec-format` and `@ido4/tech-spec-format`.
-- CI workflows hardened to prevent race conditions during automated releases.
+- **`create-spec` Stage 0 — OBS-01 reframe.** Replaced the prohibition (`Run **once**`, `Do not pipe…`) with a principle (*"the structured JSON output is in your conversation context as the Bash tool result — that's your data source"*) and a multi-line BAD/GOOD example pair contrasting the 5-invocation pattern observed in round 4 against single-call in-context reads. Same JSON-shape field reference retained as a medium-freedom template.
+- **`create-spec` Stage 1c — new chunked-write principle (OBS-R4-02).** Round 4's canvas synthesis took 57 minutes via chunked Write calls (vs ~20 minutes for the same canvas via a single Write in round 3). Added a principle (*"A 30+ capability greenfield-with-context canvas typically lands at 2,000–3,000 lines. That's normal — write it as a single Write call. The Write tool overwrites rather than appends, so iterative chunked writes either lose prior content or force you to re-encode everything-prior-plus-new on each call. The latter is O(n²) in tokens"*) plus a BAD/GOOD example pair grounded in the round-4 timing.
+- **`synthesize-spec` Stage 1d — validator-once principle.** Brief positive statement added (*"the JSON is in your conversation context — read `valid`, `errors[]`, `warnings[]`, and any metrics you need for the summary directly from the tool result. A second invocation, or piping through an external parser, returns the same data at higher cost"*). Round 4 surfaced 2 redundant calls here; addressing it consistently with create-spec.
+- **`refine-spec` — prohibition language → positive statements.** Two sites where v0.4.1 said "do not pipe through `python3 -c`" rewritten as "pull `valid` / `errors[]` / `warnings[]` from there directly." Same line count, normal-case imperative. Refine-spec was already holding the discipline in round 4; this aligns the language with the prompt-strategy.md normal-case-imperatives guidance without changing behavior.
 
-### Fixed
+### Notes
 
-- Resolved skill implementation inconsistencies identified in e2e testing.
-- Corrected v0.4.1 changelog entry.
+- **No changes to `review-spec`'s OBS-08 fix.** That fix is held by structural enforcement (Bash is not in `review-spec`'s `allowed-tools`), not prose alone — round 4 showed it working with zero permission prompts and a 53% time reduction vs round 3. Per the prompt-strategy.md "don't fix what isn't broken" rule, leaving it.
+- **TEST 15 unchanged.** All 166 plugin-validation checks still pass. The multi-line BAD examples in the new wording keep validator+`python3` tokens on different lines, so the existing anti-pattern regex doesn't trip.
+- **The asymmetry uncovered by round 4 is itself the v0.4.1 authoring lesson.** Prose discipline holds where there's structural backing (allowed-tools, parser checks); drifts otherwise. If round 5 shows OBS-01 still regressing under principle+example wording, the next step is hooks (PostToolUse on Bash flagging consecutive validator invocations), not more prose. That's a v0.5+ design decision, not more rule-stacking.
 
 ## [0.4.1] — 2026-04-28
 
