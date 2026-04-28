@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.2] — 2026-04-28
+
+Reframe OBS-01 + chunked-write as principles per prompt-strategy.md alignment
+
+### Changed
+
+- Aligned skill guidance with ido4 suite prompt strategy: architectural invariants and template synthesis now documented as core design principles.
+- Bundled validators updated to v0.9.1: `@ido4/spec-format` and `@ido4/tech-spec-format`.
+- CI workflows hardened to prevent race conditions during automated releases.
+
+### Fixed
+
+- Resolved skill implementation inconsistencies identified in e2e testing.
+- Corrected v0.4.1 changelog entry.
+
 ## [0.4.1] — 2026-04-28
 
 **Friction patch from round-3 E2E.** Four observations from `reports/e2e-003-PS-metabase-connector.md` addressed: zero permission prompts in `review-spec`, no more filesystem searches for agent files, faster Stage 0 in `create-spec`, and `validate-spec` finally surfaces in the in-product navigation. No correctness bugs were fixed — these are user-experience and skill-discoverability issues.
