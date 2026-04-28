@@ -2,15 +2,20 @@
 
 ## [0.4.3] — 2026-04-28
 
-Doctor refactor — single-call script + plugin version + workspace next-action
+**Doctor UX refactor.** Round-4 and round-5 retest sessions surfaced two `/ido4specs:doctor` UX gaps: (1) doctor was running 8 separate Bash tool calls, each producing intermediate raw output users had to filter through to reach the 8-line summary, and (2) doctor reported validator versions but not the plugin version itself — both retest rounds had the user asking "wait, am I on the right plugin version?" because doctor doesn't answer that. This patch consolidates the diagnostic into a single shell script invocation, surfaces the plugin version in the report header, and adds a workspace-aware pipeline next-action hint at the workspace-state line.
+
+### Added
+- **`scripts/doctor.sh`** (~175 lines, shellcheck-clean). Self-contained diagnostic: runs all 8 health checks in one shell invocation; reads plugin version from `.claude-plugin/plugin.json`; computes pipeline next-action from workspace artifacts (strategic spec → `/ido4specs:create-spec`, canvas → `/ido4specs:synthesize-spec`, tech spec → `/ido4specs:review-spec`); resolves its own paths via `BASH_SOURCE` so it works from any cwd; falls back to the conventional `CLAUDE_PLUGIN_DATA` path when run outside Claude Code. Exit 0 on all-pass, 1 on any-fail.
 
 ### Changed
-- `/ido4specs:doctor` refactored to run as a single diagnostic call with plugin version and workspace next-action hints
-- Bundled validators updated to v0.9.1
-- CI workflows hardened against race conditions in marketplace sync and auto-merge
+- **`skills/doctor/SKILL.md`** slimmed from 143 lines to 33 lines (−75%). Skill body becomes: invoke the script via `${CLAUDE_SKILL_DIR}/../../scripts/doctor.sh`, relay output, surface remediation hints conversationally if a check failed. Status-line config-block helper retained for the `not configured` case. Diagnostic logic now lives in versioned shell — easier to evolve, shellcheck-validated alongside the other plugin scripts.
+- **Doctor report header now shows plugin version.** New line: `Plugin version: 0.4.3` (read from `.claude-plugin/plugin.json`). Closes the round-4/5 uncertainty about which plugin version is loaded.
+- **Doctor Check 7 (workspace state) now includes a pipeline next-action.** When the script finds a strategic spec without artifacts: `→ next: /ido4specs:create-spec <path>`. When a canvas exists: `→ next: /ido4specs:synthesize-spec <canvas>`. When a tech spec exists: `→ next: /ido4specs:review-spec <spec> or /ido4specs:validate-spec <spec>`.
 
-### Fixed
-- Corrected skill guidance documentation on context preservation and chunked-write patterns
+### Notes
+- **TEST 13 picks up the new script automatically** via `scripts/*.sh` glob. Three new passes added to the validation suite (executable, valid bash syntax, shellcheck error-level clean) — total 169 PASS / 0 FAIL (was 166).
+- **Trade-off:** less verbose intermediate output on failure. The formatted line message + remediation hint covers most cases. If a debug case needs raw bash output, a `--verbose` flag on the script would address it; not added in this patch since no failure case has needed it yet.
+- **Out of scope for this patch (deferred to v0.5+):** cross-skill integrity check (catches partial-install issues), bundle freshness vs npm (proactive drift detection), auto-fix offers per failed check, plugin install source detection (local-dev vs marketplace).
 
 ## [0.4.2] — 2026-04-28
 
