@@ -5,138 +5,56 @@ description: >
   wrong", "validator not found", "plugin not working", "doctor", "diagnose",
   "check plugin health", or when any other ido4specs skill fails with a
   validator-related error.
-allowed-tools: Bash, Read, Glob
+allowed-tools: Bash, Read
 user-invocable: true
 ---
 
-Run diagnostic checks and report a PASS/FAIL checklist. If anything fails, provide specific remediation.
-
-## Checks
-
-Run these in order. Stop-on-first-failure is not needed — run all checks and report the full picture.
-
-### 1. Node.js availability
+Run the bundled diagnostic script and relay its output. The script runs all 8 health checks in one shell invocation and produces a fully formatted report — no further parsing or formatting needed in the skill body.
 
 ```bash
-node --version
+bash "${CLAUDE_SKILL_DIR}/../../scripts/doctor.sh"
 ```
 
-- PASS: version ≥ 18
-- FAIL: "Node.js not found or version too old. Install Node.js 18+ from https://nodejs.org."
+Display the script's output verbatim. If the script's exit code is non-zero, one or more checks failed; the failing line(s) carry their own remediation hints. Read those lines and surface the remediation conversationally if the user looks like they want help acting on a failure.
 
-### 2. Bundled validators in plugin data directory
+If check 8 reports `not configured (opt-in available)` and the user wants to enable the status line, emit this config block (substituting the absolute path to `scripts/statusline.sh` resolved from the plugin location):
 
-Check that the SessionStart hook copied both validators:
-
-```bash
-ls "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js" "${CLAUDE_PLUGIN_DATA}/spec-validator.js"
-```
-
-- PASS: both files exist
-- FAIL: "Validator not found in plugin data. Start a fresh Claude Code session to re-trigger the SessionStart hook, or manually copy from `dist/` to `${CLAUDE_PLUGIN_DATA}/`."
-
-### 3. Validators execute correctly
-
-```bash
-node "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js" --help 2>&1 || true
-node "${CLAUDE_PLUGIN_DATA}/spec-validator.js" --help 2>&1 || true
-```
-
-- PASS: both produce output without crashing (exit 0 or exit 2 with usage info — both acceptable)
-- FAIL: "Validator crashes on execution. The bundle may be corrupted. Run `scripts/update-tech-spec-validator.sh <version>` to refresh."
-
-### 4. Version markers present and consistent
-
-Read `dist/.tech-spec-format-version` and `dist/.spec-format-version`. Both should contain semver strings.
-
-- PASS: both present with valid semver
-- FAIL: "Version marker missing or malformed. Run the corresponding update script."
-
-### 5. Checksum verification
-
-```bash
-shasum -a 256 dist/tech-spec-validator.js | awk '{print $1}'
-cat dist/.tech-spec-format-checksum | awk '{print $1}'
-```
-
-Compare. Repeat for spec-validator.
-
-- PASS: checksums match for both bundles
-- FAIL: "Checksum mismatch — the bundle was modified after the last update. Run the update script to refresh both the bundle and checksum."
-
-### 6. Round-trip test
-
-Run the technical-spec validator against the example fixture:
-
-```bash
-node "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js" "${CLAUDE_PLUGIN_ROOT}/references/example-technical-spec.md"
-```
-
-- PASS: exit 0, `"valid": true` in JSON output
-- FAIL: "The bundled validator cannot parse the example fixture. This indicates a validator/fixture version mismatch. Run `scripts/update-tech-spec-validator.sh` to refresh."
-
-### 7. Workspace artifact scan
-
-Glob for existing ido4specs artifacts in the project:
-
-```bash
-ls specs/*-tech-canvas.md specs/*-tech-spec.md docs/specs/*-tech-canvas.md docs/specs/*-tech-spec.md 2>/dev/null
-```
-
-Report what exists. No PASS/FAIL — purely informational.
-
-### 8. Status line opt-in
-
-`scripts/statusline.sh` is provided as an opt-in tool — `ido4specs` cannot ship a `statusLine` default via plugin `settings.json` (Claude Code only supports `agent` and `subagentStatusLine` keys there, and `${CLAUDE_PLUGIN_ROOT}` does not expand inside `settings.json`). Check whether the user has wired it into their own settings:
-
-```bash
-python3 -c "
-import json, os
-user_p = os.path.expanduser('~/.claude/settings.json')
-proj_p = '.claude/settings.json'
-def get(p): return (json.load(open(p)) if os.path.exists(p) else {}).get('statusLine', {}).get('command', '')
-print('USER:', get(user_p))
-print('PROJ:', get(proj_p))
-"
-```
-
-Three outcomes (purely informational, no PASS/FAIL):
-
-- The configured `statusLine.command` references the plugin's `scripts/statusline.sh` (matched against the absolute path resolved from `${CLAUDE_PLUGIN_ROOT}/scripts/statusline.sh`) → report **"configured for ido4specs"** with the scope (user / project) where it lives.
-- The configured `statusLine.command` references something else → report **"configured (user's own)"** and note that `ido4specs` would not override it even if it could.
-- Neither user nor project settings has a `statusLine` → report **"not configured (opt-in available)"** and emit the copy-paste config block:
-
-  ```jsonc
-  {
-    "statusLine": {
-      "type": "command",
-      "command": "<absolute path to scripts/statusline.sh, resolved from CLAUDE_PLUGIN_ROOT>",
-      "padding": 1
-    }
+```jsonc
+{
+  "statusLine": {
+    "type": "command",
+    "command": "<absolute path to scripts/statusline.sh>",
+    "padding": 1
   }
-  ```
+}
+```
 
-  Tell the user to add it to `~/.claude/settings.json` (global) or `.claude/settings.json` (project).
+Tell the user to add it to `~/.claude/settings.json` (global) or `.claude/settings.json` (project).
 
-## Output format
+## What the script reports
+
+The script's output structure is stable across runs:
 
 ```
 ido4specs doctor — diagnostic report
 
-1. Node.js:             PASS (v22.1.0)
+Plugin version:  0.4.2
+
+1. Node.js:             PASS (v20.18.1)
 2. Bundled validators:  PASS (both in plugin data)
 3. Validator execution: PASS (both run without crash)
-4. Version markers:     PASS (tech-spec-format@0.8.0, spec-format@0.8.0)
+4. Version markers:     PASS (tech-spec-format@0.9.1, spec-format@0.9.1)
 5. Checksums:           PASS (both match)
 6. Round-trip test:     PASS (example-technical-spec.md validates clean)
-7. Workspace state:     specs/notification-system-tech-spec.md (640 lines)
-8. Status line:         not configured (opt-in available — see config block above)
+7. Workspace state:     strategic spec at data-connector-spec.md
+                        → next: /ido4specs:create-spec data-connector-spec.md
+8. Status line:         not configured (opt-in available)
 
 Result: ALL CHECKS PASSED
 ```
 
-If any check fails:
+The plugin version line is read from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`. Check 7 surfaces a workspace-aware next-action suggestion when an artifact is found. The script's logic for all 8 checks lives in `scripts/doctor.sh` — see the script for the exact bash for each check and the failure-case remediation strings.
 
-```
-Result: 1 CHECK FAILED — see remediation above
-```
+## Why a script, not inline bash
+
+The previous version of this skill ran 8 separate Bash tool calls (one per check). That worked, but produced ~25 lines of intermediate raw bash output that the user had to mentally filter through to get to the 8-line summary. The single-script approach reduces that to one Bash tool call with deterministic structured output. The skill body shrinks; the diagnostic logic gets versioned and shellcheck-validated alongside the other plugin scripts.
