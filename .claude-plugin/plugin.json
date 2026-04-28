@@ -1,7 +1,7 @@
 {
   "name": "ido4specs",
   "description": "The bridge between a strategic spec and GitHub issues. Analyzes your codebase, decomposes capabilities into implementation tasks with effort, risk, and dependency metadata, and produces a methodology-neutral technical spec any planning tool can consume. For tech leads and staff engineers who want to skip the manual decomposition tax.",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "author": {
     "name": "Bogdan Coman",
     "email": "coman2904@gmail.com",

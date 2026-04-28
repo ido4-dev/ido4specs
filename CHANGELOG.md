@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.3] — 2026-04-28
+
+Doctor refactor — single-call script + plugin version + workspace next-action
+
+### Changed
+- `/ido4specs:doctor` refactored to run as a single diagnostic call with plugin version and workspace next-action hints
+- Bundled validators updated to v0.9.1
+- CI workflows hardened against race conditions in marketplace sync and auto-merge
+
+### Fixed
+- Corrected skill guidance documentation on context preservation and chunked-write patterns
+
 ## [0.4.2] — 2026-04-28
 
 **Authoring discipline patch.** Round-4 E2E (`reports/e2e-004-PS-metabase-connector.md`) showed v0.4.1's OBS-01 fix held in `refine-spec` (where prose was backed by clean tooling fit) but regressed in `create-spec` Stage 0 (5 redundant validator invocations) and `synthesize-spec` Stage 1d (2 calls). Audit against [`ido4-suite/docs/prompt-strategy.md`](https://github.com/ido4-dev/ido4-suite/blob/main/docs/prompt-strategy.md) surfaced the cause: the v0.4.1 wording was a rule-shaped prohibition (`Run **once**`, `Do not pipe… under any circumstances`), but the failure has no enforcement layer (no parser, hook, or schema catches violations). Per the doc's decision test, qualitative instructions without enforcement should be principles, not rules. This patch reframes the affected SKILL.md sections as principles paired with concrete BAD/GOOD examples grounded in observed round-4 behavior.
