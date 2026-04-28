@@ -28,7 +28,7 @@ Read the target file. Check the format marker line — if it says `strategic-spe
 
 > This file is a strategic spec (`format: strategic-spec`), not a technical spec. Strategic-spec refinement lives in `/ido4shape:refine-spec`. If you want to refine the *technical* spec derived from this strategic spec, pass the corresponding `-tech-spec.md` file instead.
 
-Run the bundled validator to capture the baseline. Read its JSON output directly — do not pipe through `python3 -c` to extract fields.
+Run the bundled validator to capture the baseline. The structured JSON output is in your conversation context after the call — pull `valid`, `errors[]`, and `warnings[]` from there directly.
 
 ```bash
 node "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js" <path>
@@ -67,7 +67,7 @@ If the ripple feels larger than the user expected, pause and confirm scope befor
 
 ## After each refinement
 
-1. Run the bundled validator and read its JSON output directly. Do not pipe through `python3 -c` to extract fields — the JSON is structured and you have it in conversation context after the call.
+1. Run the bundled validator. The structured JSON output is in your conversation context — read field values from there directly.
    ```bash
    node "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js" <path>
    ```

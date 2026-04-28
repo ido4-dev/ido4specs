@@ -57,11 +57,30 @@ Otherwise:
 
 1. Verify the strategic spec file exists at `$ARGUMENTS` using the `Read` tool. If the file doesn't exist, report the missing path and stop.
 
-2. Run the bundled strategic-spec validator **once** and parse its JSON output directly. The validator's stdout is structured JSON — read the fields you need from that single output, in conversation context. Do not pipe the validator output through `python3 -c` or run multiple validator invocations to extract different fields.
+2. Run the bundled strategic-spec validator. After the call, the structured JSON output is in your conversation context as the Bash tool result — that's your data source for the Stage 0 summary.
 
    ```bash
    node "${CLAUDE_PLUGIN_DATA}/spec-validator.js" "$ARGUMENTS"
    ```
+
+   The data is already in your context. Re-running the validator with a different shape, or piping the output through an external parser to extract slices, produces the same information at higher latency and token cost.
+
+   *Example — extracting summary fields from the validator output:*
+
+   *BAD (5 invocations):*
+   - Call 1: bare validator → 211-line JSON in tool result.
+   - Call 2: validator piped through a Python one-liner to print `valid` / `errors` / `warnings`.
+   - Call 3: piped through Python to list group names and capability counts.
+   - Call 4: piped through Python to extract dependency-graph keys.
+   - Call 5: piped through Python to count cross-group edges.
+   - Same data the first call already returned, with five-fold latency and token cost.
+
+   *GOOD (1 invocation):*
+   - One call to the validator. The 211-line JSON is in your conversation context.
+   - Read `project.name` for the summary header.
+   - Iterate `groups[]` for the per-group rows.
+   - Count `crossCuttingConcerns.length` for the cross-cutting summary.
+   - Done.
 
    The output JSON top-level shape is `{ valid, meta, metrics, project, crossCuttingConcerns, groups, orphanCapabilities, dependencyGraph, errors, warnings }`. The fields you need for Stage 0:
    - `valid`, `errors`, `warnings` — gating
@@ -192,6 +211,23 @@ Compose the complete technical canvas following the template in `${CLAUDE_SKILL_
 Every strategic capability must have its own `## Capability:` section — no summary tables, no collapsing, no shortcuts. The canvas is the context preservation layer for the entire pipeline: Phase 2 (`synthesize-spec`) receives ONLY this canvas, not the strategic spec. If the canvas loses context, everything downstream fails.
 
 Write the complete canvas to `{artifact-dir}/{spec-name}-tech-canvas.md` using the `Write` tool.
+
+A 30+ capability greenfield-with-context canvas typically lands at 2,000–3,000 lines. That's normal for the artifact — write it as a single Write call. The Write tool overwrites rather than appends, so iterative chunked writes either lose prior content or force you to re-encode everything-prior-plus-new on each call. The latter is O(n²) in tokens.
+
+*Example — writing a 2,500-line canvas:*
+
+*BAD (chunked, observed at 57 minutes for a 43-cap canvas):*
+- "I'll build the canvas in chunks via append-style writes to stay within output limits."
+- First Write: ~300 lines.
+- Re-read source material to compose next section.
+- Second Write: now has to include all of section 1 + section 2 (Write overwrites).
+- Re-read again. Third Write: sections 1 + 2 + 3.
+- Each chunk re-encodes everything before it.
+
+*GOOD (single Write, ~20 minutes for the same canvas):*
+- Compose the entire canvas in your reasoning.
+- Single Write call with the complete content.
+- If the initial output appears truncated by an output budget, retry the single Write — that's the fix, not switching into chunked-append mode.
 
 ### Stage 1d: Verify and summarize
 

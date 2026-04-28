@@ -136,6 +136,8 @@ Immediately after writing the spec, run the bundled tech-spec validator to catch
 node "${CLAUDE_PLUGIN_DATA}/tech-spec-validator.js" "{artifact-dir}/{spec-name}-tech-spec.md"
 ```
 
+The validator returns structured JSON to stdout. After the call, that JSON is in your conversation context — read `valid`, `errors[]`, `warnings[]`, and any metrics you need for the summary directly from the tool result. A second invocation, or piping through an external parser, returns the same data at higher cost.
+
 Parse the exit code and JSON output:
 
 - **Exit 0, no errors** → report "Structural validation: PASS" with the parser version (from `dist/.tech-spec-format-version`) and proceed to the End-of-Phase message.
